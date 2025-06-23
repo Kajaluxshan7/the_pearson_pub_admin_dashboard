@@ -1,107 +1,132 @@
-import React from "react";
-import {
-  AppBar,
-  Toolbar,
-  Typography,
-  IconButton,
-  Card,
-  CardContent,
-} from "@mui/material";
-import Grid from "@mui/material/GridLegacy";
-import MenuIcon from "@mui/icons-material/Menu";
-import PeopleIcon from "@mui/icons-material/People";
-import ShoppingCartIcon from "@mui/icons-material/ShoppingCart";
-import BarChartIcon from "@mui/icons-material/BarChart";
+import React, { useState, useEffect } from "react";
+import { ThemeProvider, createTheme } from "@mui/material/styles";
+import CssBaseline from "@mui/material/CssBaseline";
+import { AdminDashboard } from "./components/AdminDashboard";
+import { Login } from "./components/Login";
 
-const stats = [
-  {
-    title: "Users",
-    value: 1200,
-    icon: <PeopleIcon fontSize="large" className="text-blue-500" />,
+const lightTheme = createTheme({
+  palette: {
+    mode: "light",
+    primary: {
+      main: "#d9a419", // Golden yellow
+    },
+    background: {
+      default: "#f5f5f5",
+      paper: "#ffffff",
+    },
+    text: {
+      primary: "#111827",
+    },
   },
-  {
-    title: "Orders",
-    value: 305,
-    icon: <ShoppingCartIcon fontSize="large" className="text-green-500" />,
+  components: {
+    MuiAppBar: {
+      styleOverrides: {
+        root: {
+          backgroundColor: "#ffffff",
+          color: "#111827",
+        },
+      },
+    },
   },
-  {
-    title: "Revenue",
-    value: "$15,300",
-    icon: <BarChartIcon fontSize="large" className="text-purple-500" />,
+});
+
+const darkTheme = createTheme({
+  palette: {
+    mode: "dark",
+    primary: {
+      main: "#d9a419", // Golden yellow
+    },
+    background: {
+      default: "#111827",
+      paper: "#1f2937",
+    },
+    text: {
+      primary: "#ffffff",
+    },
   },
-];
+  components: {
+    MuiAppBar: {
+      styleOverrides: {
+        root: {
+          backgroundColor: "#111827",
+          color: "#ffffff",
+        },
+      },
+    },
+  },
+});
 
 const App: React.FC = () => {
+  const [isDarkMode, setIsDarkMode] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [loading, setLoading] = useState(true);
+  useEffect(() => {
+    // Check if user is already logged in by verifying with backend
+    checkAuthStatus();
+  }, []);
+
+  const checkAuthStatus = async () => {
+    try {
+      const response = await fetch("http://localhost:5000/auth/profile", {
+        method: "GET",
+        credentials: "include", // Include cookies
+      });
+
+      if (response.ok) {
+        setIsAuthenticated(true);
+      } else {
+        setIsAuthenticated(false);
+      }
+    } catch (error) {
+      setIsAuthenticated(false);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleLogin = (_token: string) => {
+    setIsAuthenticated(true);
+  };
+
+  const handleLogout = async () => {
+    try {
+      await fetch("http://localhost:5000/auth/logout", {
+        method: "POST",
+        credentials: "include", // Include cookies
+      });
+    } catch (error) {
+      console.error("Logout error:", error);
+    } finally {
+      setIsAuthenticated(false);
+    }
+  };
+
+  const toggleTheme = () => {
+    setIsDarkMode(!isDarkMode);
+  };
+
+  if (loading) {
+    return null; // Or a loading spinner
+  }
+
+  if (!isAuthenticated) {
+    return (
+      <ThemeProvider theme={isDarkMode ? darkTheme : lightTheme}>
+        <CssBaseline />
+        <Login onLogin={handleLogin} />
+      </ThemeProvider>
+    );
+  }
+
   return (
-    <div className="flex h-screen bg-gray-100">
-      {/* Sidebar */}
-      <aside className="w-64 bg-white shadow-md flex flex-col p-6">
-        <h2 className="text-2xl font-bold mb-8 text-blue-600">Admin Panel</h2>
-        <nav className="flex flex-col space-y-4 text-gray-700">
-          <a href="#" className="hover:text-blue-600">
-            Dashboard
-          </a>
-          <a href="#" className="hover:text-blue-600">
-            Users
-          </a>
-          <a href="#" className="hover:text-blue-600">
-            Orders
-          </a>
-          <a href="#" className="hover:text-blue-600">
-            Reports
-          </a>
-          <a href="#" className="hover:text-blue-600">
-            Settings
-          </a>
-        </nav>
-      </aside>
-
-      {/* Main content area */}
-      <div className="flex-1 flex flex-col">
-        {/* AppBar */}
-        <AppBar position="static" color="primary" elevation={3}>
-          <Toolbar>
-            <IconButton
-              edge="start"
-              color="inherit"
-              aria-label="menu"
-              sx={{ mr: 2 }}
-            >
-              <MenuIcon />
-            </IconButton>
-            <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
-              Admin Dashboard
-            </Typography>
-          </Toolbar>
-        </AppBar>
-
-        {/* Stats cards */}
-        <main className="p-6 flex-1 overflow-auto">
-          <Grid container spacing={4}>
-            {stats.map(({ title, value, icon }) => (
-              <Grid item xs={12} sm={6} md={4} key={title}>
-                <Card
-                  sx={{
-                    display: "flex",
-                    alignItems: "center",
-                    padding: 2,
-                    boxShadow: 3,
-                  }}
-                >
-                  <div className="mr-4">{icon}</div>
-                  <CardContent>
-                    <Typography variant="h5" component="div" fontWeight="bold">
-                      {value}
-                    </Typography>
-                    <Typography color="text.secondary">{title}</Typography>
-                  </CardContent>
-                </Card>
-              </Grid>
-            ))}
-          </Grid>
-        </main>
-      </div>
-    </div>
+    <ThemeProvider theme={isDarkMode ? darkTheme : lightTheme}>
+      <CssBaseline />
+      <AdminDashboard
+        isDarkMode={isDarkMode}
+        toggleTheme={toggleTheme}
+        onLogout={handleLogout}
+      />
+    </ThemeProvider>
   );
 };
 
