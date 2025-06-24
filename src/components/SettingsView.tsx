@@ -17,7 +17,7 @@ import {
   Select,
   MenuItem,
 } from "@mui/material";
-import Grid  from "@mui/material/GridLegacy";
+import Grid from "@mui/material/GridLegacy";
 import {
   Person,
   Security,

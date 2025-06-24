@@ -22,7 +22,13 @@ import {
   Switch,
   FormControlLabel,
 } from "@mui/material";
-import { Add, Clear, Schedule, AccessTime, ToggleOn, ToggleOff } from "@mui/icons-material";
+import {
+  Add,
+  Clear,
+  Schedule,
+  AccessTime,
+  ToggleOn,
+} from "@mui/icons-material";
 import { motion } from "framer-motion";
 import { operationHourService } from "../services/api";
 import type { OperationHour, PaginatedResponse } from "../services/api";
@@ -59,7 +65,8 @@ const OperationHoursViewModern: React.FC<OperationHoursViewModernProps> = ({
   const [selectedDay, setSelectedDay] = useState<string>("");
   // Modal states
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false);  const [selectedOperationHour, setSelectedOperationHour] =
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [selectedOperationHour, setSelectedOperationHour] =
     useState<OperationHour | null>(null);
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
   const [hourToDelete, setHourToDelete] = useState<OperationHour | null>(null);
@@ -184,13 +191,16 @@ const OperationHoursViewModern: React.FC<OperationHoursViewModernProps> = ({
         ...hour,
         status: !hour.status,
       };
-      
+
       await operationHourService.update(hour.id, updatedHour);
-      showAlert('success', `Operation hours for ${hour.day} ${hour.status ? 'closed' : 'opened'}`);
+      showAlert(
+        "success",
+        `Operation hours for ${hour.day} ${hour.status ? "closed" : "opened"}`
+      );
       fetchOperationHours();
     } catch (error) {
-      console.error('Error toggling operation hour status:', error);
-      showAlert('error', 'Failed to update operation hour status');
+      console.error("Error toggling operation hour status:", error);
+      showAlert("error", "Failed to update operation hour status");
     }
   };
 
@@ -355,7 +365,6 @@ const OperationHoursViewModern: React.FC<OperationHoursViewModernProps> = ({
             </Button>
           )}
         </Box>
-
         {/* Alert */}
         {alert && (
           <Alert
@@ -366,7 +375,6 @@ const OperationHoursViewModern: React.FC<OperationHoursViewModernProps> = ({
             {alert.message}
           </Alert>
         )}
-
         {/* Filters */}
         <Card
           elevation={0}
@@ -403,7 +411,6 @@ const OperationHoursViewModern: React.FC<OperationHoursViewModernProps> = ({
             </Box>
           </CardContent>
         </Card>
-
         {/* Data Grid */}
         <Card elevation={0} sx={{ height: 600 }}>
           {loading ? (
@@ -417,7 +424,8 @@ const OperationHoursViewModern: React.FC<OperationHoursViewModernProps> = ({
                 />
               ))}
             </Box>
-          ) : (            <ModernTable
+          ) : (
+            <ModernTable
               columns={columns}
               data={operationHours}
               loading={loading}
@@ -435,11 +443,11 @@ const OperationHoursViewModern: React.FC<OperationHoursViewModernProps> = ({
               onView={handleView}
               customActions={[
                 {
-                  id: 'toggle-status',
-                  label: 'Toggle Status',
+                  id: "toggle-status",
+                  label: "Toggle Status",
                   icon: <ToggleOn />,
                   onClick: handleToggleStatus,
-                  color: 'primary',
+                  color: "primary",
                 },
               ]}
               canEdit={() => userRole === "admin" || userRole === "superadmin"}
@@ -451,7 +459,6 @@ const OperationHoursViewModern: React.FC<OperationHoursViewModernProps> = ({
             />
           )}
         </Card>
-
         {/* Add/Edit Modal */}
         <Dialog
           open={isAddModalOpen || isEditModalOpen}
@@ -553,7 +560,8 @@ const OperationHoursViewModern: React.FC<OperationHoursViewModernProps> = ({
               {isAddModalOpen ? "Add" : "Update"}
             </Button>{" "}
           </DialogActions>
-        </Dialog>        {/* Confirm Delete Dialog */}
+        </Dialog>{" "}
+        {/* Confirm Delete Dialog */}
         <ConfirmDialog
           open={confirmDeleteOpen}
           title="Delete Operation Hour"
@@ -564,7 +572,6 @@ const OperationHoursViewModern: React.FC<OperationHoursViewModernProps> = ({
             setHourToDelete(null);
           }}
         />
-
         {/* View Operation Hour Details Dialog */}
         <Dialog
           open={viewDialogOpen}
@@ -588,25 +595,31 @@ const OperationHoursViewModern: React.FC<OperationHoursViewModernProps> = ({
                       height: 60,
                       borderRadius: 3,
                       background: `linear-gradient(135deg, ${theme.palette.info.main}, ${theme.palette.info.dark})`,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      color: 'white',
-                      boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      color: "white",
+                      boxShadow: "0 4px 20px rgba(0,0,0,0.1)",
                     }}
                   >
                     <Schedule fontSize="large" />
                   </Box>
                   <Box>
-                    <Typography variant="h5" fontWeight={700} color="text.primary">
+                    <Typography
+                      variant="h5"
+                      fontWeight={700}
+                      color="text.primary"
+                    >
                       {selectedOperationHour.day}
                     </Typography>
                     <Box display="flex" gap={1} mt={0.5}>
                       <Chip
-                        label={selectedOperationHour.status ? 'Open' : 'Closed'}
-                        color={selectedOperationHour.status ? 'success' : 'error'}
+                        label={selectedOperationHour.status ? "Open" : "Closed"}
+                        color={
+                          selectedOperationHour.status ? "success" : "error"
+                        }
                         size="small"
-                        sx={{ 
+                        sx={{
                           fontWeight: 600,
                           borderRadius: 2,
                         }}
@@ -615,57 +628,96 @@ const OperationHoursViewModern: React.FC<OperationHoursViewModernProps> = ({
                   </Box>
                 </Box>
               </DialogTitle>
-              
+
               <DialogContent sx={{ px: 3, pb: 3 }}>
-                <Paper 
-                  elevation={0} 
-                  sx={{ 
-                    p: 3, 
+                <Paper
+                  elevation={0}
+                  sx={{
+                    p: 3,
                     borderRadius: 3,
                     border: 1,
-                    borderColor: 'divider',
+                    borderColor: "divider",
                     background: theme.palette.background.paper,
                   }}
                 >
-                  <Typography variant="h6" sx={{ mb: 2, fontWeight: 600, color: 'info.main' }}>
+                  <Typography
+                    variant="h6"
+                    sx={{ mb: 2, fontWeight: 600, color: "info.main" }}
+                  >
                     Operation Hours
                   </Typography>
-                  
+
                   <Box sx={{ mb: 2 }}>
-                    <Typography variant="body2" color="text.secondary" fontWeight={500} mb={1}>
+                    <Typography
+                      variant="body2"
+                      color="text.secondary"
+                      fontWeight={500}
+                      mb={1}
+                    >
                       Day of Week
                     </Typography>
-                    <Typography variant="h6" fontWeight={700} color="primary.main">
+                    <Typography
+                      variant="h6"
+                      fontWeight={700}
+                      color="primary.main"
+                    >
                       {selectedOperationHour.day}
                     </Typography>
                   </Box>
 
                   <Box sx={{ mb: 2 }}>
-                    <Typography variant="body2" color="text.secondary" fontWeight={500} mb={1}>
+                    <Typography
+                      variant="body2"
+                      color="text.secondary"
+                      fontWeight={500}
+                      mb={1}
+                    >
                       Opening Time
                     </Typography>
-                    <Typography variant="body1" fontWeight={600} color="success.main">
+                    <Typography
+                      variant="body1"
+                      fontWeight={600}
+                      color="success.main"
+                    >
                       {formatTime(selectedOperationHour.open_time)}
                     </Typography>
                   </Box>
 
                   <Box sx={{ mb: 2 }}>
-                    <Typography variant="body2" color="text.secondary" fontWeight={500} mb={1}>
+                    <Typography
+                      variant="body2"
+                      color="text.secondary"
+                      fontWeight={500}
+                      mb={1}
+                    >
                       Closing Time
                     </Typography>
-                    <Typography variant="body1" fontWeight={600} color="error.main">
+                    <Typography
+                      variant="body1"
+                      fontWeight={600}
+                      color="error.main"
+                    >
                       {formatTime(selectedOperationHour.close_time)}
                     </Typography>
                   </Box>
 
                   <Box sx={{ mb: 2 }}>
-                    <Typography variant="body2" color="text.secondary" fontWeight={500} mb={1}>
+                    <Typography
+                      variant="body2"
+                      color="text.secondary"
+                      fontWeight={500}
+                      mb={1}
+                    >
                       Status
                     </Typography>
                     <Chip
-                      label={selectedOperationHour.status ? 'Open for Business' : 'Closed'}
-                      color={selectedOperationHour.status ? 'success' : 'error'}
-                      sx={{ 
+                      label={
+                        selectedOperationHour.status
+                          ? "Open for Business"
+                          : "Closed"
+                      }
+                      color={selectedOperationHour.status ? "success" : "error"}
+                      sx={{
                         fontWeight: 600,
                         borderRadius: 2,
                         px: 1,
@@ -674,31 +726,45 @@ const OperationHoursViewModern: React.FC<OperationHoursViewModernProps> = ({
                   </Box>
 
                   <Box sx={{ mb: 2 }}>
-                    <Typography variant="body2" color="text.secondary" fontWeight={500} mb={1}>
+                    <Typography
+                      variant="body2"
+                      color="text.secondary"
+                      fontWeight={500}
+                      mb={1}
+                    >
                       Created
                     </Typography>
                     <Typography variant="body1" fontWeight={500}>
-                      {new Date(selectedOperationHour.created_at).toLocaleDateString('en-US', {
-                        year: 'numeric',
-                        month: 'long',
-                        day: 'numeric',
-                        hour: '2-digit',
-                        minute: '2-digit',
+                      {new Date(
+                        selectedOperationHour.created_at
+                      ).toLocaleDateString("en-US", {
+                        year: "numeric",
+                        month: "long",
+                        day: "numeric",
+                        hour: "2-digit",
+                        minute: "2-digit",
                       })}
                     </Typography>
                   </Box>
 
                   <Box>
-                    <Typography variant="body2" color="text.secondary" fontWeight={500} mb={1}>
+                    <Typography
+                      variant="body2"
+                      color="text.secondary"
+                      fontWeight={500}
+                      mb={1}
+                    >
                       Last Updated
                     </Typography>
                     <Typography variant="body1" fontWeight={500}>
-                      {new Date(selectedOperationHour.updated_at).toLocaleDateString('en-US', {
-                        year: 'numeric',
-                        month: 'long',
-                        day: 'numeric',
-                        hour: '2-digit',
-                        minute: '2-digit',
+                      {new Date(
+                        selectedOperationHour.updated_at
+                      ).toLocaleDateString("en-US", {
+                        year: "numeric",
+                        month: "long",
+                        day: "numeric",
+                        hour: "2-digit",
+                        minute: "2-digit",
                       })}
                     </Typography>
                   </Box>
@@ -706,11 +772,11 @@ const OperationHoursViewModern: React.FC<OperationHoursViewModernProps> = ({
               </DialogContent>
 
               <DialogActions sx={{ px: 3, pb: 3 }}>
-                <Button 
-                  onClick={() => setViewDialogOpen(false)} 
+                <Button
+                  onClick={() => setViewDialogOpen(false)}
                   variant="contained"
-                  sx={{ 
-                    borderRadius: 2, 
+                  sx={{
+                    borderRadius: 2,
                     px: 3,
                     background: `linear-gradient(135deg, ${theme.palette.info.main}, ${theme.palette.info.dark})`,
                   }}

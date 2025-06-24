@@ -25,11 +25,17 @@ import {
   Restaurant,
   Extension,
   Event,
-  Schedule,  Settings,
+  Schedule,
+  Settings,
   Logout,
   DarkMode,
   LightMode,
   Menu as MenuIcon,
+  CalendarToday,
+  LocalOffer,
+  Fastfood,
+  SwapHoriz,
+  AccountTree,
 } from "@mui/icons-material";
 import { motion, AnimatePresence } from "framer-motion";
 import { DashboardView } from "./DashboardView";
@@ -40,6 +46,11 @@ import AddonsViewModern from "./AddonsViewModern";
 import EventsViewModern from "./EventsViewModern";
 import OperationHoursViewModern from "./OperationHoursViewModern";
 import { SettingsView } from "./SettingsView";
+import { SpecialsDayView } from "./SpecialsDayView";
+import { SpecialsView } from "./SpecialsView";
+import { WingSaucesView } from "./WingSaucesView";
+import { SubstituteSidesView } from "./SubstituteSidesView";
+import ItemAddonsRelationsView from "./ItemAddonsRelationsView";
 import { authService } from "../services/api";
 
 const drawerWidth = 280;
@@ -91,6 +102,36 @@ const sidebarItems: SidebarItem[] = [
     label: "Addons",
     icon: <Extension />,
     component: AddonsViewModern,
+  },
+  {
+    id: "item-addons-relations",
+    label: "Item-Addon Relations",
+    icon: <AccountTree />,
+    component: ItemAddonsRelationsView,
+  },
+  {
+    id: "specials-days",
+    label: "Specials Days",
+    icon: <CalendarToday />,
+    component: SpecialsDayView,
+  },
+  {
+    id: "specials",
+    label: "Specials",
+    icon: <LocalOffer />,
+    component: SpecialsView,
+  },
+  {
+    id: "wing-sauces",
+    label: "Wing Sauces",
+    icon: <Fastfood />,
+    component: WingSaucesView,
+  },
+  {
+    id: "substitute-sides",
+    label: "Substitute Sides",
+    icon: <SwapHoriz />,
+    component: SubstituteSidesView,
   },
   {
     id: "events",
@@ -152,11 +193,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     setSelectedView("settings");
     setAnchorEl(null);
   };
-
   const handleLogoutClick = () => {
     setAnchorEl(null);
     onLogout();
-  }; // Render the current view with appropriate props
+  };
+
+  // Render the current view with appropriate props
   const renderCurrentView = () => {
     const userRole = userProfile?.role as "admin" | "superadmin";
 
@@ -171,6 +213,16 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         return <ItemsView />;
       case "addons":
         return <AddonsViewModern userRole={userRole} />;
+      case "item-addons-relations":
+        return <ItemAddonsRelationsView />;
+      case "specials-days":
+        return <SpecialsDayView />;
+      case "specials":
+        return <SpecialsView />;
+      case "wing-sauces":
+        return <WingSaucesView />;
+      case "substitute-sides":
+        return <SubstituteSidesView />;
       case "events":
         return <EventsViewModern userRole={userRole} />;
       case "operation-hours":
@@ -558,7 +610,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   {userProfile?.role}
                 </Typography>
               </>
-            )}          </Box>
+            )}{" "}
+          </Box>
 
           <MenuItem onClick={handleSettingsClick} sx={{ py: 1.5 }}>
             <ListItemIcon>

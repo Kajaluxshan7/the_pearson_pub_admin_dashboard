@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState } from "react";
 import {
   Paper,
   Table,
@@ -18,31 +18,31 @@ import {
   MenuItem,
   ListItemIcon,
   ListItemText,
-} from '@mui/material';
-import { 
-  MoreVert as MoreVertIcon, 
-  Edit, 
-  Delete, 
-  Visibility 
-} from '@mui/icons-material';
+} from "@mui/material";
+import {
+  MoreVert as MoreVertIcon,
+  Edit,
+  Delete,
+  Visibility,
+} from "@mui/icons-material";
 
 const StyledTableCell = styled(TableCell)(({ theme }) => ({
   fontWeight: 600,
   backgroundColor: theme.palette.grey[50],
   color: theme.palette.text.primary,
   borderBottom: `2px solid ${theme.palette.divider}`,
-  fontSize: '0.875rem',
+  fontSize: "0.875rem",
 }));
 
 const StyledTableRow = styled(TableRow)(({ theme }) => ({
-  '&:nth-of-type(odd)': {
+  "&:nth-of-type(odd)": {
     backgroundColor: theme.palette.action.hover,
   },
-  '&:hover': {
+  "&:hover": {
     backgroundColor: theme.palette.action.selected,
-    cursor: 'pointer',
+    cursor: "pointer",
   },
-  '& .MuiTableCell-root': {
+  "& .MuiTableCell-root": {
     borderBottom: `1px solid ${theme.palette.divider}`,
     padding: theme.spacing(1.5),
   },
@@ -52,7 +52,7 @@ interface Column {
   id: string;
   label: string;
   minWidth?: number;
-  align?: 'right' | 'left' | 'center';
+  align?: "right" | "left" | "center";
   format?: (value: any, row?: any) => string | React.ReactNode;
 }
 
@@ -62,7 +62,7 @@ interface ActionItem {
   icon: React.ReactElement;
   onClick: (item: any) => void;
   hidden?: (item: any) => boolean;
-  color?: 'primary' | 'secondary' | 'error' | 'warning' | 'info' | 'success';
+  color?: "primary" | "secondary" | "error" | "warning" | "info" | "success";
 }
 
 interface ModernTableProps {
@@ -110,7 +110,10 @@ export const ModernTable: React.FC<ModernTableProps> = ({
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [selectedItem, setSelectedItem] = useState<any>(null);
 
-  const handleActionClick = (event: React.MouseEvent<HTMLElement>, item: any) => {
+  const handleActionClick = (
+    event: React.MouseEvent<HTMLElement>,
+    item: any
+  ) => {
     event.stopPropagation();
     setAnchorEl(event.currentTarget);
     setSelectedItem(item);
@@ -135,15 +138,16 @@ export const ModernTable: React.FC<ModernTableProps> = ({
         )}
         {columns.map((column) => (
           <TableCell key={column.id} style={{ minWidth: column.minWidth }}>
-            <Skeleton 
-              variant="rectangular" 
-              width="85%" 
+            <Skeleton
+              variant="rectangular"
+              width="85%"
               height={16}
-              sx={{ 
+              sx={{
                 borderRadius: 1,
-                backgroundColor: theme.palette.mode === 'dark' 
-                  ? 'rgba(255, 255, 255, 0.08)' 
-                  : 'rgba(0, 0, 0, 0.08)'
+                backgroundColor:
+                  theme.palette.mode === "dark"
+                    ? "rgba(255, 255, 255, 0.08)"
+                    : "rgba(0, 0, 0, 0.08)",
               }}
             />
           </TableCell>
@@ -159,58 +163,58 @@ export const ModernTable: React.FC<ModernTableProps> = ({
 
   const renderActionCell = (row: any) => {
     const actions = [];
-    
+
     // Add standard actions
     if (onView) {
       actions.push({
-        id: 'view',
-        label: 'View Details',
+        id: "view",
+        label: "View Details",
         icon: <Visibility fontSize="small" />,
         onClick: () => onView(row),
-        color: 'info' as const,
+        color: "info" as const,
       });
     }
-    
+
     if (onEdit && canEdit(row)) {
       actions.push({
-        id: 'edit',
-        label: 'Edit',
+        id: "edit",
+        label: "Edit",
         icon: <Edit fontSize="small" />,
         onClick: () => onEdit(row),
-        color: 'primary' as const,
+        color: "primary" as const,
       });
     }
-    
+
     if (onDelete && canDelete(row)) {
       actions.push({
-        id: 'delete',
-        label: 'Delete',
+        id: "delete",
+        label: "Delete",
         icon: <Delete fontSize="small" />,
         onClick: () => onDelete(row),
-        color: 'error' as const,
+        color: "error" as const,
       });
     }
-    
+
     // Add custom actions
-    customActions.forEach(action => {
+    customActions.forEach((action) => {
       if (!action.hidden || !action.hidden(row)) {
         actions.push(action);
       }
     });
-    
+
     if (actions.length === 0) return null;
-    
+
     return (
       <TableCell align="center" sx={{ width: 60 }}>
         <IconButton
           size="small"
           onClick={(e) => handleActionClick(e, row)}
-          sx={{ 
+          sx={{
             color: theme.palette.text.secondary,
-            '&:hover': { 
+            "&:hover": {
               backgroundColor: theme.palette.action.hover,
               color: theme.palette.text.primary,
-            }
+            },
           }}
         >
           <MoreVertIcon fontSize="small" />
@@ -221,42 +225,42 @@ export const ModernTable: React.FC<ModernTableProps> = ({
 
   const getMenuActions = () => {
     if (!selectedItem) return [];
-    
+
     const actions = [];
-    
+
     // Add standard actions
     if (onView) {
       actions.push({
-        id: 'view',
-        label: 'View Details',
+        id: "view",
+        label: "View Details",
         icon: <Visibility fontSize="small" />,
         onClick: () => handleMenuAction(() => onView(selectedItem)),
-        color: 'info' as const,
+        color: "info" as const,
       });
     }
-    
+
     if (onEdit && canEdit(selectedItem)) {
       actions.push({
-        id: 'edit',
-        label: 'Edit',
+        id: "edit",
+        label: "Edit",
         icon: <Edit fontSize="small" />,
         onClick: () => handleMenuAction(() => onEdit(selectedItem)),
-        color: 'primary' as const,
+        color: "primary" as const,
       });
     }
-    
+
     if (onDelete && canDelete(selectedItem)) {
       actions.push({
-        id: 'delete',
-        label: 'Delete',
+        id: "delete",
+        label: "Delete",
         icon: <Delete fontSize="small" />,
         onClick: () => handleMenuAction(() => onDelete(selectedItem)),
-        color: 'error' as const,
+        color: "error" as const,
       });
     }
-    
+
     // Add custom actions
-    customActions.forEach(action => {
+    customActions.forEach((action) => {
       if (!action.hidden || !action.hidden(selectedItem)) {
         actions.push({
           ...action,
@@ -264,20 +268,23 @@ export const ModernTable: React.FC<ModernTableProps> = ({
         });
       }
     });
-    
+
     return actions;
   };
 
   return (
-    <Paper elevation={0} sx={{ border: 1, borderColor: 'divider', borderRadius: 2 }}>
+    <Paper
+      elevation={0}
+      sx={{ border: 1, borderColor: "divider", borderRadius: 2 }}
+    >
       {title && (
-        <Box sx={{ p: 3, borderBottom: 1, borderColor: 'divider' }}>
+        <Box sx={{ p: 3, borderBottom: 1, borderColor: "divider" }}>
           <Typography variant="h6" component="h2" sx={{ fontWeight: 600 }}>
             {title}
           </Typography>
         </Box>
       )}
-      
+
       <TableContainer>
         <Table stickyHeader>
           <TableHead>
@@ -308,9 +315,13 @@ export const ModernTable: React.FC<ModernTableProps> = ({
               renderLoadingRows()
             ) : data.length === 0 ? (
               <TableRow>
-                <TableCell 
-                  colSpan={columns.length + (!hideRowNumbers ? 1 : 0) + (showActions ? 1 : 0)} 
-                  align="center" 
+                <TableCell
+                  colSpan={
+                    columns.length +
+                    (!hideRowNumbers ? 1 : 0) +
+                    (showActions ? 1 : 0)
+                  }
+                  align="center"
                   sx={{ py: 8 }}
                 >
                   <Typography variant="body1" color="text.secondary">
@@ -322,13 +333,18 @@ export const ModernTable: React.FC<ModernTableProps> = ({
               data.map((row, index) => (
                 <StyledTableRow key={row.id || index}>
                   {!hideRowNumbers && (
-                    <TableCell align="center" sx={{ width: 60, color: 'text.secondary' }}>
+                    <TableCell
+                      align="center"
+                      sx={{ width: 60, color: "text.secondary" }}
+                    >
                       {page * pageSize + index + 1}
                     </TableCell>
                   )}
                   {columns.map((column) => (
                     <TableCell key={column.id} align={column.align}>
-                      {column.format ? column.format(row[column.id], row) : row[column.id]}
+                      {column.format
+                        ? column.format(row[column.id], row)
+                        : row[column.id]}
                     </TableCell>
                   ))}
                   {showActions && renderActionCell(row)}
@@ -338,7 +354,7 @@ export const ModernTable: React.FC<ModernTableProps> = ({
           </TableBody>
         </Table>
       </TableContainer>
-      
+
       <TablePagination
         rowsPerPageOptions={[5, 10, 25, 50]}
         component="div"
@@ -346,67 +362,73 @@ export const ModernTable: React.FC<ModernTableProps> = ({
         rowsPerPage={pageSize}
         page={page}
         onPageChange={(_, newPage) => onPageChange(newPage)}
-        onRowsPerPageChange={(event) => 
+        onRowsPerPageChange={(event) =>
           onPageSizeChange(parseInt(event.target.value, 10))
         }
         sx={{
           borderTop: 1,
-          borderColor: 'divider',
-          '& .MuiTablePagination-toolbar': {
+          borderColor: "divider",
+          "& .MuiTablePagination-toolbar": {
             paddingX: 2,
           },
         }}
       />
-      
+
       {/* Action Menu */}
       <Menu
         anchorEl={anchorEl}
         open={Boolean(anchorEl)}
         onClose={handleActionClose}
-        transformOrigin={{ horizontal: 'right', vertical: 'top' }}
-        anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
+        transformOrigin={{ horizontal: "right", vertical: "top" }}
+        anchorOrigin={{ horizontal: "right", vertical: "bottom" }}
         PaperProps={{
           elevation: 8,
           sx: {
             minWidth: 180,
             mt: 1,
             borderRadius: 2,
-            '& .MuiMenuItem-root': {
+            "& .MuiMenuItem-root": {
               px: 2,
               py: 1,
               borderRadius: 1,
               mx: 1,
               mb: 0.5,
-              '&:last-child': {
+              "&:last-child": {
                 mb: 1,
               },
             },
           },
         }}
-      >        {getMenuActions().map((action) => (
+      >
+        {" "}
+        {getMenuActions().map((action) => (
           <MenuItem
             key={action.id}
             onClick={action.onClick}
             sx={{
-              color: action.color ? theme.palette[action.color].main : theme.palette.text.primary,
-              '&:hover': {
-                backgroundColor: action.color ? 
-                  theme.palette[action.color].light + '20' : 
-                  theme.palette.action.hover,
-                color: action.color ? theme.palette[action.color].main : theme.palette.text.primary,
+              color: action.color
+                ? theme.palette[action.color].main
+                : theme.palette.text.primary,
+              "&:hover": {
+                backgroundColor: action.color
+                  ? theme.palette[action.color].light + "20"
+                  : theme.palette.action.hover,
+                color: action.color
+                  ? theme.palette[action.color].main
+                  : theme.palette.text.primary,
               },
             }}
           >
-            <ListItemIcon sx={{ color: 'inherit', minWidth: 36 }}>
+            <ListItemIcon sx={{ color: "inherit", minWidth: 36 }}>
               {action.icon}
             </ListItemIcon>
-            <ListItemText 
+            <ListItemText
               primary={action.label}
               primaryTypographyProps={{
-                sx: { 
-                  color: 'inherit',
+                sx: {
+                  color: "inherit",
                   fontWeight: 500,
-                }
+                },
               }}
             />
           </MenuItem>

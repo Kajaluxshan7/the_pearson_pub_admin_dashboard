@@ -43,10 +43,13 @@ import {
   KeyboardArrowDown,
 } from "@mui/icons-material";
 import { motion } from "framer-motion";
-import { DateCalendar } from '@mui/x-date-pickers/DateCalendar';
-import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
-import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
-import { PickersDay, type PickersDayProps } from '@mui/x-date-pickers/PickersDay';
+import { DateCalendar } from "@mui/x-date-pickers/DateCalendar";
+import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
+import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
+import {
+  PickersDay,
+  type PickersDayProps,
+} from "@mui/x-date-pickers/PickersDay";
 import {
   categoryService,
   itemService,
@@ -108,21 +111,21 @@ const StatCard: React.FC<StatCardProps> = ({
 
   // Simple trend line generator
   const generateTrendPath = (data: number[]) => {
-    if (!data || data.length < 2) return '';
-    
+    if (!data || data.length < 2) return "";
+
     const width = 80;
     const height = 30;
     const maxVal = Math.max(...data);
     const minVal = Math.min(...data);
     const range = maxVal - minVal || 1;
-    
+
     const points = data.map((val, i) => {
       const x = (i / (data.length - 1)) * width;
       const y = height - ((val - minVal) / range) * height;
       return `${x},${y}`;
     });
-    
-    return `M ${points.join(' L ')}`;
+
+    return `M ${points.join(" L ")}`;
   };
 
   return (
@@ -174,7 +177,9 @@ const StatCard: React.FC<StatCardProps> = ({
                   <Skeleton variant="text" width="40%" height={16} />
                 </>
               ) : (
-                <>                  <Typography
+                <>
+                  {" "}
+                  <Typography
                     variant="h3"
                     sx={{
                       fontWeight: 700,
@@ -183,7 +188,9 @@ const StatCard: React.FC<StatCardProps> = ({
                       lineHeight: 1,
                     }}
                   >
-                    {typeof value === 'object' ? JSON.stringify(value) : String(value)}
+                    {typeof value === "object"
+                      ? JSON.stringify(value)
+                      : String(value)}
                   </Typography>
                   <Typography
                     variant="body2"
@@ -196,16 +203,22 @@ const StatCard: React.FC<StatCardProps> = ({
                     {title}
                   </Typography>
                   {change && (
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                    <Box
+                      sx={{ display: "flex", alignItems: "center", gap: 0.5 }}
+                    >
                       {isPositive ? (
-                        <KeyboardArrowUp sx={{ color: 'success.main', fontSize: 18 }} />
+                        <KeyboardArrowUp
+                          sx={{ color: "success.main", fontSize: 18 }}
+                        />
                       ) : (
-                        <KeyboardArrowDown sx={{ color: 'error.main', fontSize: 18 }} />
+                        <KeyboardArrowDown
+                          sx={{ color: "error.main", fontSize: 18 }}
+                        />
                       )}
                       <Typography
                         variant="caption"
                         sx={{
-                          color: isPositive ? 'success.main' : 'error.main',
+                          color: isPositive ? "success.main" : "error.main",
                           fontWeight: 600,
                         }}
                       >
@@ -216,22 +229,28 @@ const StatCard: React.FC<StatCardProps> = ({
                 </>
               )}
             </Box>
-            
-            <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1 }}>
+            <Box
+              sx={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                gap: 1,
+              }}
+            >
               <Box
                 sx={{
                   p: 2,
                   borderRadius: 2,
                   backgroundColor: `${color}20`,
                   color: color,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
                 }}
               >
                 {icon}
               </Box>
-              
+
               {/* Mini trend chart */}
               {trend && trend.length > 1 && !loading && (
                 <Box sx={{ mt: 1 }}>
@@ -248,7 +267,12 @@ const StatCard: React.FC<StatCardProps> = ({
                       <circle
                         key={i}
                         cx={(i / (trend.length - 1)) * 80}
-                        cy={30 - ((trend[i] - Math.min(...trend)) / (Math.max(...trend) - Math.min(...trend) || 1)) * 30}
+                        cy={
+                          30 -
+                          ((trend[i] - Math.min(...trend)) /
+                            (Math.max(...trend) - Math.min(...trend) || 1)) *
+                            30
+                        }
                         r="2"
                         fill={color}
                       />
@@ -256,7 +280,8 @@ const StatCard: React.FC<StatCardProps> = ({
                   </svg>
                 </Box>
               )}
-            </Box>          </Box>
+            </Box>{" "}
+          </Box>
         </CardContent>
       </Card>
     </motion.div>
@@ -266,7 +291,7 @@ const StatCard: React.FC<StatCardProps> = ({
 export const DashboardView: React.FC = () => {
   const theme = useTheme();
   const [calendarDate, setCalendarDate] = useState<Date | null>(new Date());
-  const [eventDates, setEventDates] = useState<Date[]>([]);
+  // const [eventDates, setEventDates] = useState<Date[]>([]);
   const [stats, setStats] = useState<DashboardStats>({
     categories: 0,
     items: 0,
@@ -275,20 +300,26 @@ export const DashboardView: React.FC = () => {
     admins: 0,
     operationHours: 0,
   });
-  const [loading, setLoading] = useState(true);  const [tasks, setTasks] = useState<Task[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [tasks, setTasks] = useState<Task[]>([]);
   const [upcomingEvents, setUpcomingEvents] = useState<DashboardEvent[]>([]);
-  const [newTask, setNewTask] = useState('');
-  const [newTaskPriority, setNewTaskPriority] = useState<'high' | 'medium' | 'low'>('medium');
+  const [newTask, setNewTask] = useState("");
+  const [newTaskPriority, setNewTaskPriority] = useState<
+    "high" | "medium" | "low"
+  >("medium");
   const [taskDialogOpen, setTaskDialogOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [eventDialogOpen, setEventDialogOpen] = useState(false);
-  const [selectedDateEvents, setSelectedDateEvents] = useState<DashboardEvent[]>([]);
+  const [selectedDateEvents, setSelectedDateEvents] = useState<
+    DashboardEvent[]
+  >([]);
 
   useEffect(() => {
     fetchDashboardData();
     fetchUpcomingEvents();
     fetchTasks();
-  }, []);  const fetchDashboardData = async () => {
+  }, []);
+  const fetchDashboardData = async () => {
     try {
       setLoading(true);
 
@@ -303,9 +334,9 @@ export const DashboardView: React.FC = () => {
       ]);
 
       const getCountValue = (result: PromiseSettledResult<any>): number => {
-        if (result.status === 'fulfilled') {
+        if (result.status === "fulfilled") {
           const value = result.value;
-          if (typeof value === 'object' && value !== null) {
+          if (typeof value === "object" && value !== null) {
             return value.count || 0;
           }
           return Number(value) || 0;
@@ -335,38 +366,46 @@ export const DashboardView: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };  const fetchUpcomingEvents = async () => {
+  };
+  const fetchUpcomingEvents = async () => {
     try {
       const response = await eventService.getAll(1, 50); // Get more events for calendar
-      const events = response?.data || [];
-      
-      // Extract event dates for calendar highlighting
-      const dates = events.map((event: any) => new Date(event.start_date));
-      setEventDates(dates);
-      
+      const events = response?.data || []; // Extract event dates for calendar highlighting
+      // const dates = events.map((event: any) => new Date(event.start_date));
+      // setEventDates(dates);
+
       const now = new Date();
-      const upcoming = events.filter((event: any) => 
-        event && event.start_date && new Date(event.start_date) >= now
-      ).slice(0, 5);
+      const upcoming = events
+        .filter(
+          (event: any) =>
+            event && event.start_date && new Date(event.start_date) >= now
+        )
+        .slice(0, 5);
       setUpcomingEvents(upcoming);
     } catch (error) {
       console.error("Error fetching upcoming events:", error);
       setUpcomingEvents([]);
-      setEventDates([]);
+      // setEventDates([]);
     }
-  };  // Custom day component for highlighting events
+  }; // Custom day component for highlighting events
   const CustomDay = (props: PickersDayProps) => {
     const { day, outsideCurrentMonth, ...other } = props;
-    const dayEvents = upcomingEvents.filter(event => {
+    const dayEvents = upcomingEvents.filter((event) => {
       const eventStart = new Date(event.start_date);
       const eventEnd = new Date(event.end_date);
       return day >= eventStart && day <= eventEnd;
     });
-    
+
     const hasEvent = dayEvents.length > 0;
 
     if (outsideCurrentMonth) {
-      return <PickersDay {...other} day={day} outsideCurrentMonth={outsideCurrentMonth} />;
+      return (
+        <PickersDay
+          {...other}
+          day={day}
+          outsideCurrentMonth={outsideCurrentMonth}
+        />
+      );
     }
 
     const handleEventIconClick = (e: React.MouseEvent) => {
@@ -377,13 +416,17 @@ export const DashboardView: React.FC = () => {
       }
     };
 
-    const tooltipTitle = hasEvent 
-      ? `${dayEvents.length} event${dayEvents.length > 1 ? 's' : ''}: ${dayEvents.map(e => e.name).join(', ')}`
-      : '';
+    const tooltipTitle = hasEvent
+      ? `${dayEvents.length} event${
+          dayEvents.length > 1 ? "s" : ""
+        }: ${dayEvents.map((e) => e.name).join(", ")}`
+      : "";
 
     return (
       <Tooltip title={tooltipTitle} arrow placement="top">
-        <Box position="relative" display="inline-block">          <PickersDay
+        <Box position="relative" display="inline-block">
+          {" "}
+          <PickersDay
             {...other}
             day={day}
             outsideCurrentMonth={outsideCurrentMonth}
@@ -394,44 +437,44 @@ export const DashboardView: React.FC = () => {
                 fontWeight: 700,
                 border: `2px solid ${theme.palette.primary.main}60`,
                 boxShadow: `0 0 0 2px ${theme.palette.primary.main}20`,
-                '&:hover': {
+                "&:hover": {
                   background: `linear-gradient(135deg, ${theme.palette.primary.light}80, ${theme.palette.primary.main}60)`,
-                  transform: 'scale(1.05)',
+                  transform: "scale(1.05)",
                   boxShadow: `0 4px 20px ${theme.palette.primary.main}40`,
                 },
               }),
-              transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+              transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
               borderRadius: 2,
-              position: 'relative',
-              overflow: 'visible',
+              position: "relative",
+              overflow: "visible",
             }}
           />
           {hasEvent && (
             <Box
               onClick={handleEventIconClick}
               sx={{
-                position: 'absolute',
+                position: "absolute",
                 top: -4,
                 right: -4,
                 width: 18,
                 height: 18,
-                borderRadius: '50%',
+                borderRadius: "50%",
                 background: `linear-gradient(45deg, ${theme.palette.secondary.main}, ${theme.palette.secondary.dark})`,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                cursor: 'pointer',
-                boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
-                border: '2px solid white',
-                color: 'white',
-                fontSize: '10px',
-                fontWeight: 'bold',
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                cursor: "pointer",
+                boxShadow: "0 2px 8px rgba(0,0,0,0.2)",
+                border: "2px solid white",
+                color: "white",
+                fontSize: "10px",
+                fontWeight: "bold",
                 zIndex: 1,
-                transform: 'scale(0.9)',
-                transition: 'all 0.2s ease-in-out',
-                '&:hover': {
-                  transform: 'scale(1.1)',
-                  boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+                transform: "scale(0.9)",
+                transition: "all 0.2s ease-in-out",
+                "&:hover": {
+                  transform: "scale(1.1)",
+                  boxShadow: "0 4px 12px rgba(0,0,0,0.3)",
                   background: `linear-gradient(45deg, ${theme.palette.secondary.dark}, ${theme.palette.secondary.main})`,
                 },
               }}
@@ -442,11 +485,12 @@ export const DashboardView: React.FC = () => {
         </Box>
       </Tooltip>
     );
-  };const fetchTasks = async () => {
+  };
+  const fetchTasks = async () => {
     try {
       // In a real app, you'd fetch from an API
       // For now, using local storage
-      const savedTasks = localStorage.getItem('dashboard_tasks');
+      const savedTasks = localStorage.getItem("dashboard_tasks");
       if (savedTasks) {
         const parsedTasks = JSON.parse(savedTasks);
         setTasks(Array.isArray(parsedTasks) ? parsedTasks : []);
@@ -471,7 +515,7 @@ export const DashboardView: React.FC = () => {
           },
         ];
         setTasks(defaultTasks);
-        localStorage.setItem('dashboard_tasks', JSON.stringify(defaultTasks));
+        localStorage.setItem("dashboard_tasks", JSON.stringify(defaultTasks));
       }
     } catch (error) {
       console.error("Error fetching tasks:", error);
@@ -481,7 +525,7 @@ export const DashboardView: React.FC = () => {
 
   const saveTasks = (updatedTasks: Task[]) => {
     setTasks(updatedTasks);
-    localStorage.setItem('dashboard_tasks', JSON.stringify(updatedTasks));
+    localStorage.setItem("dashboard_tasks", JSON.stringify(updatedTasks));
   };
 
   const toggleTask = (taskId: string) => {
@@ -507,7 +551,7 @@ export const DashboardView: React.FC = () => {
       };
       const updatedTasks = [task, ...tasks];
       saveTasks(updatedTasks);
-      setNewTask('');
+      setNewTask("");
       setTaskDialogOpen(false);
     }
   };
@@ -526,8 +570,9 @@ export const DashboardView: React.FC = () => {
           ? { ...task, title: newTask.trim(), priority: newTaskPriority }
           : task
       );
-      saveTasks(updatedTasks);      setEditingTask(null);
-      setNewTask('');
+      saveTasks(updatedTasks);
+      setEditingTask(null);
+      setNewTask("");
       setTaskDialogOpen(false);
     }
   };
@@ -671,30 +716,31 @@ export const DashboardView: React.FC = () => {
               >
                 <CalendarToday color="primary" />
                 Calendar
-              </Typography>              <Box
+              </Typography>{" "}
+              <Box
                 sx={{
-                  '& .MuiDateCalendar-root': {
-                    width: '100%',
-                    backgroundColor: 'transparent',
+                  "& .MuiDateCalendar-root": {
+                    width: "100%",
+                    backgroundColor: "transparent",
                   },
-                  '& .MuiPickersCalendarHeader-root': {
+                  "& .MuiPickersCalendarHeader-root": {
                     paddingLeft: 1,
                     paddingRight: 1,
                     marginTop: 0,
                   },
-                  '& .MuiDayCalendar-weekDayLabel': {
+                  "& .MuiDayCalendar-weekDayLabel": {
                     color: theme.palette.text.secondary,
                     fontWeight: 600,
                   },
-                  '& .MuiPickersDay-root': {
+                  "& .MuiPickersDay-root": {
                     borderRadius: 2,
-                    '&:hover': {
-                      backgroundColor: theme.palette.primary.light + '22',
+                    "&:hover": {
+                      backgroundColor: theme.palette.primary.light + "22",
                     },
                   },
-                  '& .MuiPickersDay-today': {
-                    backgroundColor: theme.palette.primary.main + ' !important',
-                    color: 'white',
+                  "& .MuiPickersDay-today": {
+                    backgroundColor: theme.palette.primary.main + " !important",
+                    color: "white",
                   },
                 }}
               >
@@ -747,7 +793,8 @@ export const DashboardView: React.FC = () => {
                 >
                   <Assignment color="primary" />
                   Tasks & Reminders
-                </Typography>                <IconButton
+                </Typography>{" "}
+                <IconButton
                   size="small"
                   onClick={() => setTaskDialogOpen(true)}
                 >
@@ -768,8 +815,9 @@ export const DashboardView: React.FC = () => {
                       "&:hover": {
                         backgroundColor: theme.palette.action.hover,
                       },
-                    }}                    secondaryAction={
-                      <Box sx={{ display: 'flex', gap: 1 }}>
+                    }}
+                    secondaryAction={
+                      <Box sx={{ display: "flex", gap: 1 }}>
                         <IconButton
                           edge="end"
                           onClick={() => editTask(task)}
@@ -797,7 +845,8 @@ export const DashboardView: React.FC = () => {
                       >
                         <Check />
                       </IconButton>
-                    </ListItemIcon>                    <ListItemText
+                    </ListItemIcon>{" "}
+                    <ListItemText
                       primary={task.title}
                       secondary={task.priority}
                       sx={{
@@ -814,7 +863,8 @@ export const DashboardView: React.FC = () => {
                       }}
                     />
                   </ListItem>
-                ))}              </List>
+                ))}{" "}
+              </List>
             </Paper>
           </motion.div>
         </Grid>
@@ -891,7 +941,9 @@ export const DashboardView: React.FC = () => {
                       </ListItemIcon>
                       <ListItemText
                         primary={event.name}
-                        secondary={new Date(event.start_date).toLocaleDateString()}
+                        secondary={new Date(
+                          event.start_date
+                        ).toLocaleDateString()}
                       />
                     </ListItem>
                   ))
@@ -908,13 +960,13 @@ export const DashboardView: React.FC = () => {
         onClose={() => {
           setTaskDialogOpen(false);
           setEditingTask(null);
-          setNewTask('');
-          setNewTaskPriority('medium');
+          setNewTask("");
+          setNewTaskPriority("medium");
         }}
         maxWidth="sm"
         fullWidth
       >
-        <DialogTitle>{editingTask ? 'Edit Task' : 'Add New Task'}</DialogTitle>
+        <DialogTitle>{editingTask ? "Edit Task" : "Add New Task"}</DialogTitle>
         <DialogContent>
           <TextField
             autoFocus
@@ -929,7 +981,9 @@ export const DashboardView: React.FC = () => {
             <Select
               value={newTaskPriority}
               label="Priority"
-              onChange={(e) => setNewTaskPriority(e.target.value as 'high' | 'medium' | 'low')}
+              onChange={(e) =>
+                setNewTaskPriority(e.target.value as "high" | "medium" | "low")
+              }
             >
               <MenuItem value="high">High</MenuItem>
               <MenuItem value="medium">Medium</MenuItem>
@@ -938,21 +992,24 @@ export const DashboardView: React.FC = () => {
           </FormControl>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => {
-            setTaskDialogOpen(false);
-            setEditingTask(null);
-            setNewTask('');
-            setNewTaskPriority('medium');
-          }}>
+          <Button
+            onClick={() => {
+              setTaskDialogOpen(false);
+              setEditingTask(null);
+              setNewTask("");
+              setNewTaskPriority("medium");
+            }}
+          >
             Cancel
           </Button>
-          <Button 
-            onClick={editingTask ? updateTask : addTask} 
+          <Button
+            onClick={editingTask ? updateTask : addTask}
             variant="contained"
             disabled={!newTask.trim()}
           >
-            {editingTask ? 'Update' : 'Add'} Task
-          </Button>        </DialogActions>
+            {editingTask ? "Update" : "Add"} Task
+          </Button>{" "}
+        </DialogActions>
       </Dialog>
 
       {/* Event Details Dialog */}
@@ -962,12 +1019,12 @@ export const DashboardView: React.FC = () => {
         maxWidth="md"
         fullWidth
         PaperProps={{
-          sx: { borderRadius: 3 }
+          sx: { borderRadius: 3 },
         }}
       >
         <DialogTitle sx={{ pb: 1 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            <Avatar sx={{ bgcolor: 'primary.main' }}>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+            <Avatar sx={{ bgcolor: "primary.main" }}>
               <Event />
             </Avatar>
             <Typography variant="h5" fontWeight={600}>
@@ -976,49 +1033,67 @@ export const DashboardView: React.FC = () => {
           </Box>
         </DialogTitle>
         <DialogContent sx={{ pt: 2 }}>
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+          <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
             {selectedDateEvents.map((event, index) => (
-              <Paper 
-                key={event.id} 
-                sx={{ 
-                  p: 3, 
-                  borderRadius: 2, 
+              <Paper
+                key={event.id}
+                sx={{
+                  p: 3,
+                  borderRadius: 2,
                   border: `1px solid ${theme.palette.divider}`,
-                  background: `linear-gradient(135deg, ${theme.palette.primary.main}08, ${theme.palette.secondary.main}08)`
+                  background: `linear-gradient(135deg, ${theme.palette.primary.main}08, ${theme.palette.secondary.main}08)`,
                 }}
               >
-                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                    <Typography variant="h6" fontWeight={600} color="primary.main">
+                <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                  <Box
+                    sx={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "flex-start",
+                    }}
+                  >
+                    <Typography
+                      variant="h6"
+                      fontWeight={600}
+                      color="primary.main"
+                    >
                       {event.name}
                     </Typography>
-                    <Chip 
-                      label="Active" 
-                      color="success" 
-                      size="small" 
+                    <Chip
+                      label="Active"
+                      color="success"
+                      size="small"
                       sx={{ borderRadius: 2 }}
                     />
                   </Box>
-                  
-                  <Box sx={{ display: 'flex', gap: 4 }}>
+
+                  <Box sx={{ display: "flex", gap: 4 }}>
                     <Box>
-                      <Typography variant="body2" color="text.secondary" gutterBottom>
+                      <Typography
+                        variant="body2"
+                        color="text.secondary"
+                        gutterBottom
+                      >
                         Start Date
                       </Typography>
-                      <Chip 
-                        label={new Date(event.start_date).toLocaleDateString()} 
-                        color="info" 
+                      <Chip
+                        label={new Date(event.start_date).toLocaleDateString()}
+                        color="info"
                         variant="outlined"
                         size="small"
                       />
                     </Box>
                     <Box>
-                      <Typography variant="body2" color="text.secondary" gutterBottom>
+                      <Typography
+                        variant="body2"
+                        color="text.secondary"
+                        gutterBottom
+                      >
                         End Date
                       </Typography>
-                      <Chip 
-                        label={new Date(event.end_date).toLocaleDateString()} 
-                        color="warning" 
+                      <Chip
+                        label={new Date(event.end_date).toLocaleDateString()}
+                        color="warning"
                         variant="outlined"
                         size="small"
                       />
@@ -1027,15 +1102,22 @@ export const DashboardView: React.FC = () => {
 
                   {event.description && (
                     <Box>
-                      <Typography variant="body2" color="text.secondary" gutterBottom>
+                      <Typography
+                        variant="body2"
+                        color="text.secondary"
+                        gutterBottom
+                      >
                         Description
                       </Typography>
-                      <Typography variant="body1" sx={{ 
-                        p: 2, 
-                        bgcolor: 'grey.50', 
-                        borderRadius: 1,
-                        border: `1px solid ${theme.palette.divider}`
-                      }}>
+                      <Typography
+                        variant="body1"
+                        sx={{
+                          p: 2,
+                          bgcolor: "grey.50",
+                          borderRadius: 1,
+                          border: `1px solid ${theme.palette.divider}`,
+                        }}
+                      >
                         {event.description}
                       </Typography>
                     </Box>

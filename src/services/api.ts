@@ -115,6 +115,56 @@ export interface OperationHour {
   updated_at: string;
 }
 
+export interface SpecialsDay {
+  id: string;
+  day_name: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Special {
+  id: string;
+  special_type: "daily" | "seasonal" | "latenight";
+  specialsDayId?: string;
+  name: string;
+  description?: string;
+  price: number;
+  from_menu: boolean;
+  menuItemId?: string;
+  categoryId?: string;
+  seasonal_start_date?: string;
+  seasonal_end_date?: string;
+  lastEditedByAdminId: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface WingSauce {
+  id: string;
+  name: string;
+  description?: string;
+  lastEditedByAdminId?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface SubstituteSide {
+  id: string;
+  name: string;
+  price: number;
+  description?: string;
+  lastEditedByAdminId?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ItemAddonsRelation {
+  id: string;
+  itemId: string;
+  addonId: string;
+  created_at: string;
+}
+
 // Task interface for dashboard
 export interface Task {
   id: string;
@@ -313,6 +363,139 @@ export const operationHourService = {
     api.delete(`/operation-hours/${id}`).then((res) => res.data),
   getCount: (): Promise<number> =>
     api.get("/operation-hours/count").then((res) => res.data),
+};
+
+export const specialsDayService = {
+  getAll: (
+    page = 1,
+    limit = 10,
+    search?: string
+  ): Promise<PaginatedResponse<SpecialsDay>> =>
+    api
+      .get("/specials-day", { params: { page, limit, search } })
+      .then((res) => res.data),
+
+  getById: (id: string): Promise<SpecialsDay> =>
+    api.get(`/specials-day/${id}`).then((res) => res.data),
+
+  create: (data: Partial<SpecialsDay>): Promise<SpecialsDay> =>
+    api.post("/specials-day", data).then((res) => res.data),
+
+  update: (id: string, data: Partial<SpecialsDay>): Promise<SpecialsDay> =>
+    api.patch(`/specials-day/${id}`, data).then((res) => res.data),
+
+  delete: (id: string): Promise<void> =>
+    api.delete(`/specials-day/${id}`).then((res) => res.data),
+};
+
+export const specialsService = {
+  getAll: (
+    page = 1,
+    limit = 10,
+    search?: string,
+    specialType?: string
+  ): Promise<PaginatedResponse<Special>> =>
+    api
+      .get("/specials", { params: { page, limit, search, specialType } })
+      .then((res) => res.data),
+
+  getById: (id: string): Promise<Special> =>
+    api.get(`/specials/${id}`).then((res) => res.data),
+
+  create: (data: Partial<Special>): Promise<Special> =>
+    api.post("/specials", data).then((res) => res.data),
+
+  update: (id: string, data: Partial<Special>): Promise<Special> =>
+    api.patch(`/specials/${id}`, data).then((res) => res.data),
+
+  delete: (id: string): Promise<void> =>
+    api.delete(`/specials/${id}`).then((res) => res.data),
+};
+
+export const wingSauceService = {
+  getAll: (
+    page = 1,
+    limit = 10,
+    search?: string
+  ): Promise<PaginatedResponse<WingSauce>> =>
+    api
+      .get("/wing-sauces", { params: { page, limit, search } })
+      .then((res) => res.data),
+
+  getById: (id: string): Promise<WingSauce> =>
+    api.get(`/wing-sauces/${id}`).then((res) => res.data),
+
+  create: (data: Partial<WingSauce>): Promise<WingSauce> =>
+    api.post("/wing-sauces", data).then((res) => res.data),
+
+  update: (id: string, data: Partial<WingSauce>): Promise<WingSauce> =>
+    api.patch(`/wing-sauces/${id}`, data).then((res) => res.data),
+
+  delete: (id: string): Promise<void> =>
+    api.delete(`/wing-sauces/${id}`).then((res) => res.data),
+};
+
+export const substituteSideService = {
+  getAll: (
+    page = 1,
+    limit = 10,
+    search?: string
+  ): Promise<PaginatedResponse<SubstituteSide>> =>
+    api
+      .get("/substitute-sides", { params: { page, limit, search } })
+      .then((res) => res.data),
+
+  getById: (id: string): Promise<SubstituteSide> =>
+    api.get(`/substitute-sides/${id}`).then((res) => res.data),
+
+  create: (data: Partial<SubstituteSide>): Promise<SubstituteSide> =>
+    api.post("/substitute-sides", data).then((res) => res.data),
+
+  update: (
+    id: string,
+    data: Partial<SubstituteSide>
+  ): Promise<SubstituteSide> =>
+    api.patch(`/substitute-sides/${id}`, data).then((res) => res.data),
+
+  delete: (id: string): Promise<void> =>
+    api.delete(`/substitute-sides/${id}`).then((res) => res.data),
+};
+
+export const itemAddonsRelationService = {
+  getAll: (
+    page = 1,
+    limit = 10,
+    itemId?: string,
+    addonId?: string
+  ): Promise<PaginatedResponse<ItemAddonsRelation>> =>
+    api
+      .get("/item-addons-relations", {
+        params: { page, limit, itemId, addonId },
+      })
+      .then((res) => res.data),
+
+  getById: (id: string): Promise<ItemAddonsRelation> =>
+    api.get(`/item-addons-relations/${id}`).then((res) => res.data),
+
+  getByItemId: (itemId: string): Promise<ItemAddonsRelation[]> =>
+    api.get(`/item-addons-relations/by-item/${itemId}`).then((res) => res.data),
+
+  getByAddonId: (addonId: string): Promise<ItemAddonsRelation[]> =>
+    api
+      .get(`/item-addons-relations/by-addon/${addonId}`)
+      .then((res) => res.data),
+
+  create: (data: Partial<ItemAddonsRelation>): Promise<ItemAddonsRelation> =>
+    api.post("/item-addons-relations", data).then((res) => res.data),
+
+  update: (
+    id: string,
+    data: Partial<ItemAddonsRelation>
+  ): Promise<ItemAddonsRelation> =>
+    api.patch(`/item-addons-relations/${id}`, data).then((res) => res.data),
+
+  delete: (id: string): Promise<void> =>
+    api.delete(`/item-addons-relations/${id}`).then((res) => res.data),
 };
 
 // Task service for dashboard tasks

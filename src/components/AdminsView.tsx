@@ -113,7 +113,8 @@ export const AdminsView: React.FC = () => {
 
       if (statusFilter !== "all") {
         params.is_verified = statusFilter === "active";
-      }      const response: PaginatedResponse<Admin> =
+      }
+      const response: PaginatedResponse<Admin> =
         await adminService.getAllWithFilters(params);
 
       setAdmins(response.data || []);
@@ -156,7 +157,8 @@ export const AdminsView: React.FC = () => {
       admin.role !== "superadmin" &&
       admin.id !== currentUser.id
     );
-  };  const columns = [
+  };
+  const columns = [
     {
       id: "email",
       label: "Email",
@@ -321,14 +323,17 @@ export const AdminsView: React.FC = () => {
     try {
       await adminService.toggleStatus(admin.id);
       showSnackbar(
-        `Admin ${admin.email} ${admin.is_active ? 'deactivated' : 'activated'} successfully`,
-        'success'
+        `Admin ${admin.email} ${
+          admin.is_active ? "deactivated" : "activated"
+        } successfully`,
+        "success"
       );
       fetchAdmins(); // Refresh the list
     } catch (error: any) {
-      console.error('Error toggling admin status:', error);
-      const message = error.response?.data?.message || 'Error updating admin status';
-      showSnackbar(message, 'error');
+      console.error("Error toggling admin status:", error);
+      const message =
+        error.response?.data?.message || "Error updating admin status";
+      showSnackbar(message, "error");
     }
   };
   const resetForm = () => {
@@ -530,7 +535,8 @@ export const AdminsView: React.FC = () => {
                 },
               }}
             >
-              {" "}              <ModernTable
+              {" "}
+              <ModernTable
                 columns={columns}
                 data={admins}
                 loading={loading}
@@ -544,19 +550,19 @@ export const AdminsView: React.FC = () => {
                 onView={handleView}
                 customActions={[
                   {
-                    id: 'toggle-status',
-                    label: 'Toggle Status',
+                    id: "toggle-status",
+                    label: "Toggle Status",
                     icon: <CheckCircleOutline />,
                     onClick: handleToggleStatus,
                     hidden: (admin: Admin) => {
                       // Hide if not superadmin or if trying to change own status or superadmin status
                       return (
-                        currentUser?.role !== 'superadmin' ||
-                        admin.role === 'superadmin' ||
+                        currentUser?.role !== "superadmin" ||
+                        admin.role === "superadmin" ||
                         admin.id === currentUser?.id
                       );
                     },
-                    color: 'primary',
+                    color: "primary",
                   },
                 ]}
                 canEdit={canEditAdmin}
@@ -782,63 +788,77 @@ export const AdminsView: React.FC = () => {
                     sx={{
                       width: 60,
                       height: 60,
-                      borderRadius: '50%',
+                      borderRadius: "50%",
                       background: `linear-gradient(135deg, ${theme.palette.primary.main}, ${theme.palette.primary.dark})`,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      color: 'white',
-                      fontSize: '1.5rem',
-                      fontWeight: 'bold',
-                      boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      color: "white",
+                      fontSize: "1.5rem",
+                      fontWeight: "bold",
+                      boxShadow: "0 4px 20px rgba(0,0,0,0.1)",
                     }}
                   >
-                    {selectedAdmin.first_name 
+                    {selectedAdmin.first_name
                       ? selectedAdmin.first_name.charAt(0).toUpperCase()
-                      : selectedAdmin.email.charAt(0).toUpperCase()
-                    }
+                      : selectedAdmin.email.charAt(0).toUpperCase()}
                   </Box>
                   <Box>
-                    <Typography variant="h5" fontWeight={700} color="text.primary">
-                      {selectedAdmin.first_name || 'Admin Profile'}
+                    <Typography
+                      variant="h5"
+                      fontWeight={700}
+                      color="text.primary"
+                    >
+                      {selectedAdmin.first_name || "Admin Profile"}
                     </Typography>
                     <Chip
                       label={selectedAdmin.role.toUpperCase()}
-                      color={selectedAdmin.role === 'superadmin' ? 'secondary' : 'primary'}
+                      color={
+                        selectedAdmin.role === "superadmin"
+                          ? "secondary"
+                          : "primary"
+                      }
                       size="small"
-                      sx={{ 
+                      sx={{
                         fontWeight: 600,
                         borderRadius: 2,
-                        textTransform: 'uppercase',
-                        fontSize: '0.75rem',
+                        textTransform: "uppercase",
+                        fontSize: "0.75rem",
                       }}
                     />
                   </Box>
                 </Box>
               </DialogTitle>
-              
+
               <DialogContent sx={{ px: 3, pb: 3 }}>
                 <Grid container spacing={3}>
                   {/* Left Column - Contact Info */}
                   <Grid item xs={12} md={6}>
-                    <Paper 
-                      elevation={0} 
-                      sx={{ 
-                        p: 3, 
+                    <Paper
+                      elevation={0}
+                      sx={{
+                        p: 3,
                         borderRadius: 3,
                         border: 1,
-                        borderColor: 'divider',
+                        borderColor: "divider",
                         background: theme.palette.background.paper,
                       }}
                     >
-                      <Typography variant="h6" sx={{ mb: 2, fontWeight: 600, color: 'primary.main' }}>
+                      <Typography
+                        variant="h6"
+                        sx={{ mb: 2, fontWeight: 600, color: "primary.main" }}
+                      >
                         Contact Information
                       </Typography>
-                      
+
                       <Box sx={{ mb: 2 }}>
                         <Box display="flex" alignItems="center" gap={1} mb={1}>
                           <Email color="primary" fontSize="small" />
-                          <Typography variant="body2" color="text.secondary" fontWeight={500}>
+                          <Typography
+                            variant="body2"
+                            color="text.secondary"
+                            fontWeight={500}
+                          >
                             Email
                           </Typography>
                         </Box>
@@ -849,9 +869,18 @@ export const AdminsView: React.FC = () => {
 
                       {selectedAdmin.phone && (
                         <Box sx={{ mb: 2 }}>
-                          <Box display="flex" alignItems="center" gap={1} mb={1}>
+                          <Box
+                            display="flex"
+                            alignItems="center"
+                            gap={1}
+                            mb={1}
+                          >
                             <Phone color="primary" fontSize="small" />
-                            <Typography variant="body2" color="text.secondary" fontWeight={500}>
+                            <Typography
+                              variant="body2"
+                              color="text.secondary"
+                              fontWeight={500}
+                            >
                               Phone
                             </Typography>
                           </Box>
@@ -863,9 +892,18 @@ export const AdminsView: React.FC = () => {
 
                       {selectedAdmin.address && (
                         <Box>
-                          <Box display="flex" alignItems="center" gap={1} mb={1}>
+                          <Box
+                            display="flex"
+                            alignItems="center"
+                            gap={1}
+                            mb={1}
+                          >
                             <LocationOn color="primary" fontSize="small" />
-                            <Typography variant="body2" color="text.secondary" fontWeight={500}>
+                            <Typography
+                              variant="body2"
+                              color="text.secondary"
+                              fontWeight={500}
+                            >
                               Address
                             </Typography>
                           </Box>
@@ -879,35 +917,53 @@ export const AdminsView: React.FC = () => {
 
                   {/* Right Column - Status & Details */}
                   <Grid item xs={12} md={6}>
-                    <Paper 
-                      elevation={0} 
-                      sx={{ 
-                        p: 3, 
+                    <Paper
+                      elevation={0}
+                      sx={{
+                        p: 3,
                         borderRadius: 3,
                         border: 1,
-                        borderColor: 'divider',
+                        borderColor: "divider",
                         background: theme.palette.background.paper,
                       }}
                     >
-                      <Typography variant="h6" sx={{ mb: 2, fontWeight: 600, color: 'primary.main' }}>
+                      <Typography
+                        variant="h6"
+                        sx={{ mb: 2, fontWeight: 600, color: "primary.main" }}
+                      >
                         Account Details
                       </Typography>
-                      
+
                       <Box sx={{ mb: 2 }}>
-                        <Typography variant="body2" color="text.secondary" fontWeight={500} mb={1}>
+                        <Typography
+                          variant="body2"
+                          color="text.secondary"
+                          fontWeight={500}
+                          mb={1}
+                        >
                           Status
                         </Typography>
                         <Box display="flex" gap={1} flexWrap="wrap">
                           <Chip
                             icon={<CheckCircleOutline />}
-                            label={selectedAdmin.is_active ? 'Active' : 'Inactive'}
-                            color={selectedAdmin.is_active ? 'success' : 'error'}
+                            label={
+                              selectedAdmin.is_active ? "Active" : "Inactive"
+                            }
+                            color={
+                              selectedAdmin.is_active ? "success" : "error"
+                            }
                             variant="outlined"
                             sx={{ fontWeight: 500 }}
                           />
                           <Chip
-                            label={selectedAdmin.is_verified ? 'Verified' : 'Pending Verification'}
-                            color={selectedAdmin.is_verified ? 'info' : 'warning'}
+                            label={
+                              selectedAdmin.is_verified
+                                ? "Verified"
+                                : "Pending Verification"
+                            }
+                            color={
+                              selectedAdmin.is_verified ? "info" : "warning"
+                            }
                             variant="outlined"
                             sx={{ fontWeight: 500 }}
                           />
@@ -915,27 +971,41 @@ export const AdminsView: React.FC = () => {
                       </Box>
 
                       <Box sx={{ mb: 2 }}>
-                        <Typography variant="body2" color="text.secondary" fontWeight={500} mb={1}>
+                        <Typography
+                          variant="body2"
+                          color="text.secondary"
+                          fontWeight={500}
+                          mb={1}
+                        >
                           Account Created
                         </Typography>
                         <Typography variant="body1" fontWeight={500}>
-                          {new Date(selectedAdmin.created_at).toLocaleDateString('en-US', {
-                            year: 'numeric',
-                            month: 'long',
-                            day: 'numeric',
+                          {new Date(
+                            selectedAdmin.created_at
+                          ).toLocaleDateString("en-US", {
+                            year: "numeric",
+                            month: "long",
+                            day: "numeric",
                           })}
                         </Typography>
                       </Box>
 
                       <Box>
-                        <Typography variant="body2" color="text.secondary" fontWeight={500} mb={1}>
+                        <Typography
+                          variant="body2"
+                          color="text.secondary"
+                          fontWeight={500}
+                          mb={1}
+                        >
                           Last Updated
                         </Typography>
                         <Typography variant="body1" fontWeight={500}>
-                          {new Date(selectedAdmin.updated_at).toLocaleDateString('en-US', {
-                            year: 'numeric',
-                            month: 'long',
-                            day: 'numeric',
+                          {new Date(
+                            selectedAdmin.updated_at
+                          ).toLocaleDateString("en-US", {
+                            year: "numeric",
+                            month: "long",
+                            day: "numeric",
                           })}
                         </Typography>
                       </Box>
@@ -945,11 +1015,11 @@ export const AdminsView: React.FC = () => {
               </DialogContent>
 
               <DialogActions sx={{ px: 3, pb: 3 }}>
-                <Button 
-                  onClick={() => setViewDialogOpen(false)} 
+                <Button
+                  onClick={() => setViewDialogOpen(false)}
                   variant="contained"
-                  sx={{ 
-                    borderRadius: 2, 
+                  sx={{
+                    borderRadius: 2,
                     px: 3,
                     background: `linear-gradient(135deg, ${theme.palette.primary.main}, ${theme.palette.primary.dark})`,
                   }}

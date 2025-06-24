@@ -53,7 +53,8 @@ const EventsViewModern: React.FC<EventsViewModernProps> = ({ userRole }) => {
   const [endDate, setEndDate] = useState("");
   // Modal states
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false);  const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
   const [eventToDelete, setEventToDelete] = useState<Event | null>(null);
   const [viewDialogOpen, setViewDialogOpen] = useState(false);
@@ -246,7 +247,8 @@ const EventsViewModern: React.FC<EventsViewModernProps> = ({ userRole }) => {
           </Typography>
         </Box>
       ),
-    },    {
+    },
+    {
       id: "description",
       label: "Description",
       minWidth: 300,
@@ -338,13 +340,13 @@ const EventsViewModern: React.FC<EventsViewModernProps> = ({ userRole }) => {
         ...event,
         start_date: now.toISOString(),
       };
-      
+
       await eventService.update(event.id, updatedEvent);
-      showAlert('success', `Event "${event.name}" has been started`);
+      showAlert("success", `Event "${event.name}" has been started`);
       fetchEvents();
     } catch (error) {
-      console.error('Error starting event:', error);
-      showAlert('error', 'Failed to start event');
+      console.error("Error starting event:", error);
+      showAlert("error", "Failed to start event");
     }
   };
 
@@ -356,13 +358,13 @@ const EventsViewModern: React.FC<EventsViewModernProps> = ({ userRole }) => {
         ...event,
         end_date: now.toISOString(),
       };
-      
+
       await eventService.update(event.id, updatedEvent);
-      showAlert('success', `Event "${event.name}" has been ended`);
+      showAlert("success", `Event "${event.name}" has been ended`);
       fetchEvents();
     } catch (error) {
-      console.error('Error ending event:', error);
-      showAlert('error', 'Failed to end event');
+      console.error("Error ending event:", error);
+      showAlert("error", "Failed to end event");
     }
   };
 
@@ -374,15 +376,17 @@ const EventsViewModern: React.FC<EventsViewModernProps> = ({ userRole }) => {
       const updatedEvent = {
         ...event,
         start_date: tomorrow.toISOString(),
-        end_date: new Date(tomorrow.getTime() + 24 * 60 * 60 * 1000).toISOString(), // 1 day duration
+        end_date: new Date(
+          tomorrow.getTime() + 24 * 60 * 60 * 1000
+        ).toISOString(), // 1 day duration
       };
-      
+
       await eventService.update(event.id, updatedEvent);
-      showAlert('success', `Event "${event.name}" has been rescheduled`);
+      showAlert("success", `Event "${event.name}" has been rescheduled`);
       fetchEvents();
     } catch (error) {
-      console.error('Error rescheduling event:', error);
-      showAlert('error', 'Failed to reschedule event');
+      console.error("Error rescheduling event:", error);
+      showAlert("error", "Failed to reschedule event");
     }
   };
 
@@ -434,7 +438,6 @@ const EventsViewModern: React.FC<EventsViewModernProps> = ({ userRole }) => {
             </Button>
           )}
         </Box>
-
         {/* Alert */}
         {alert && (
           <Alert
@@ -445,7 +448,6 @@ const EventsViewModern: React.FC<EventsViewModernProps> = ({ userRole }) => {
             {alert.message}
           </Alert>
         )}
-
         {/* Filters */}
         <Card
           elevation={0}
@@ -502,7 +504,6 @@ const EventsViewModern: React.FC<EventsViewModernProps> = ({ userRole }) => {
             </Box>
           </CardContent>
         </Card>
-
         {/* Data Grid */}
         <Card elevation={0} sx={{ height: 600 }}>
           {loading ? (
@@ -516,7 +517,8 @@ const EventsViewModern: React.FC<EventsViewModernProps> = ({ userRole }) => {
                 />
               ))}
             </Box>
-          ) : (            <ModernTable
+          ) : (
+            <ModernTable
               columns={columns}
               data={events}
               loading={loading}
@@ -534,11 +536,11 @@ const EventsViewModern: React.FC<EventsViewModernProps> = ({ userRole }) => {
               onView={handleView}
               customActions={[
                 {
-                  id: 'start-event',
-                  label: 'Start Event',
+                  id: "start-event",
+                  label: "Start Event",
                   icon: <PlayArrow />,
                   onClick: handleStartEvent,
-                  color: 'success',
+                  color: "success",
                   hidden: (event) => {
                     const now = new Date();
                     const startDate = new Date(event.start_date);
@@ -547,11 +549,11 @@ const EventsViewModern: React.FC<EventsViewModernProps> = ({ userRole }) => {
                   },
                 },
                 {
-                  id: 'end-event',
-                  label: 'End Event',
+                  id: "end-event",
+                  label: "End Event",
                   icon: <Stop />,
                   onClick: handleEndEvent,
-                  color: 'error',
+                  color: "error",
                   hidden: (event) => {
                     const now = new Date();
                     const startDate = new Date(event.start_date);
@@ -560,11 +562,11 @@ const EventsViewModern: React.FC<EventsViewModernProps> = ({ userRole }) => {
                   },
                 },
                 {
-                  id: 'reschedule-event',
-                  label: 'Reschedule',
+                  id: "reschedule-event",
+                  label: "Reschedule",
                   icon: <Schedule />,
                   onClick: handleScheduleEvent,
-                  color: 'warning',
+                  color: "warning",
                 },
               ]}
               canEdit={() => userRole === "admin" || userRole === "superadmin"}
@@ -576,7 +578,6 @@ const EventsViewModern: React.FC<EventsViewModernProps> = ({ userRole }) => {
             />
           )}
         </Card>
-
         {/* Add/Edit Modal */}
         <Dialog
           open={isAddModalOpen || isEditModalOpen}
@@ -685,7 +686,8 @@ const EventsViewModern: React.FC<EventsViewModernProps> = ({ userRole }) => {
               {isAddModalOpen ? "Add" : "Update"}
             </Button>{" "}
           </DialogActions>
-        </Dialog>        {/* Confirm Delete Dialog */}
+        </Dialog>{" "}
+        {/* Confirm Delete Dialog */}
         <ConfirmDialog
           open={confirmDeleteOpen}
           title="Delete Event"
@@ -696,7 +698,6 @@ const EventsViewModern: React.FC<EventsViewModernProps> = ({ userRole }) => {
             setEventToDelete(null);
           }}
         />
-
         {/* View Event Details Dialog */}
         <Dialog
           open={viewDialogOpen}
@@ -720,25 +721,33 @@ const EventsViewModern: React.FC<EventsViewModernProps> = ({ userRole }) => {
                       height: 60,
                       borderRadius: 3,
                       background: `linear-gradient(135deg, ${theme.palette.secondary.main}, ${theme.palette.secondary.dark})`,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      color: 'white',
-                      boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      color: "white",
+                      boxShadow: "0 4px 20px rgba(0,0,0,0.1)",
                     }}
                   >
                     <EventIcon fontSize="large" />
                   </Box>
                   <Box>
-                    <Typography variant="h5" fontWeight={700} color="text.primary">
+                    <Typography
+                      variant="h5"
+                      fontWeight={700}
+                      color="text.primary"
+                    >
                       {selectedEvent.name}
                     </Typography>
                     <Box display="flex" gap={1} mt={0.5}>
                       <Chip
-                        label={`${new Date(selectedEvent.start_date).toLocaleDateString()} - ${new Date(selectedEvent.end_date).toLocaleDateString()}`}
+                        label={`${new Date(
+                          selectedEvent.start_date
+                        ).toLocaleDateString()} - ${new Date(
+                          selectedEvent.end_date
+                        ).toLocaleDateString()}`}
                         color="primary"
                         size="small"
-                        sx={{ 
+                        sx={{
                           fontWeight: 600,
                           borderRadius: 2,
                         }}
@@ -747,27 +756,35 @@ const EventsViewModern: React.FC<EventsViewModernProps> = ({ userRole }) => {
                   </Box>
                 </Box>
               </DialogTitle>
-              
+
               <DialogContent sx={{ px: 3, pb: 3 }}>
                 <Grid container spacing={3}>
                   {/* Left Column - Event Info */}
                   <Grid item xs={12} md={6}>
-                    <Paper 
-                      elevation={0} 
-                      sx={{ 
-                        p: 3, 
+                    <Paper
+                      elevation={0}
+                      sx={{
+                        p: 3,
                         borderRadius: 3,
                         border: 1,
-                        borderColor: 'divider',
+                        borderColor: "divider",
                         background: theme.palette.background.paper,
                       }}
                     >
-                      <Typography variant="h6" sx={{ mb: 2, fontWeight: 600, color: 'secondary.main' }}>
+                      <Typography
+                        variant="h6"
+                        sx={{ mb: 2, fontWeight: 600, color: "secondary.main" }}
+                      >
                         Event Information
                       </Typography>
-                      
+
                       <Box sx={{ mb: 2 }}>
-                        <Typography variant="body2" color="text.secondary" fontWeight={500} mb={1}>
+                        <Typography
+                          variant="body2"
+                          color="text.secondary"
+                          fontWeight={500}
+                          mb={1}
+                        >
                           Event Name
                         </Typography>
                         <Typography variant="body1" fontWeight={600}>
@@ -777,7 +794,12 @@ const EventsViewModern: React.FC<EventsViewModernProps> = ({ userRole }) => {
 
                       {selectedEvent.description && (
                         <Box sx={{ mb: 2 }}>
-                          <Typography variant="body2" color="text.secondary" fontWeight={500} mb={1}>
+                          <Typography
+                            variant="body2"
+                            color="text.secondary"
+                            fontWeight={500}
+                            mb={1}
+                          >
                             Description
                           </Typography>
                           <Typography variant="body1" sx={{ lineHeight: 1.6 }}>
@@ -787,32 +809,55 @@ const EventsViewModern: React.FC<EventsViewModernProps> = ({ userRole }) => {
                       )}
 
                       <Box sx={{ mb: 2 }}>
-                        <Typography variant="body2" color="text.secondary" fontWeight={500} mb={1}>
+                        <Typography
+                          variant="body2"
+                          color="text.secondary"
+                          fontWeight={500}
+                          mb={1}
+                        >
                           Start Date
                         </Typography>
-                        <Typography variant="body1" fontWeight={600} color="primary.main">
-                          {new Date(selectedEvent.start_date).toLocaleDateString('en-US', {
-                            year: 'numeric',
-                            month: 'long',
-                            day: 'numeric',
-                            hour: '2-digit',
-                            minute: '2-digit',
+                        <Typography
+                          variant="body1"
+                          fontWeight={600}
+                          color="primary.main"
+                        >
+                          {new Date(
+                            selectedEvent.start_date
+                          ).toLocaleDateString("en-US", {
+                            year: "numeric",
+                            month: "long",
+                            day: "numeric",
+                            hour: "2-digit",
+                            minute: "2-digit",
                           })}
                         </Typography>
                       </Box>
 
                       <Box>
-                        <Typography variant="body2" color="text.secondary" fontWeight={500} mb={1}>
+                        <Typography
+                          variant="body2"
+                          color="text.secondary"
+                          fontWeight={500}
+                          mb={1}
+                        >
                           End Date
                         </Typography>
-                        <Typography variant="body1" fontWeight={600} color="secondary.main">
-                          {new Date(selectedEvent.end_date).toLocaleDateString('en-US', {
-                            year: 'numeric',
-                            month: 'long',
-                            day: 'numeric',
-                            hour: '2-digit',
-                            minute: '2-digit',
-                          })}
+                        <Typography
+                          variant="body1"
+                          fontWeight={600}
+                          color="secondary.main"
+                        >
+                          {new Date(selectedEvent.end_date).toLocaleDateString(
+                            "en-US",
+                            {
+                              year: "numeric",
+                              month: "long",
+                              day: "numeric",
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            }
+                          )}
                         </Typography>
                       </Box>
                     </Paper>
@@ -820,61 +865,89 @@ const EventsViewModern: React.FC<EventsViewModernProps> = ({ userRole }) => {
 
                   {/* Right Column - Additional Details */}
                   <Grid item xs={12} md={6}>
-                    <Paper 
-                      elevation={0} 
-                      sx={{ 
-                        p: 3, 
+                    <Paper
+                      elevation={0}
+                      sx={{
+                        p: 3,
                         borderRadius: 3,
                         border: 1,
-                        borderColor: 'divider',
+                        borderColor: "divider",
                         background: theme.palette.background.paper,
                       }}
                     >
-                      <Typography variant="h6" sx={{ mb: 2, fontWeight: 600, color: 'secondary.main' }}>
+                      <Typography
+                        variant="h6"
+                        sx={{ mb: 2, fontWeight: 600, color: "secondary.main" }}
+                      >
                         Event Details
                       </Typography>
-                      
+
                       <Box sx={{ mb: 2 }}>
-                        <Typography variant="body2" color="text.secondary" fontWeight={500} mb={1}>
+                        <Typography
+                          variant="body2"
+                          color="text.secondary"
+                          fontWeight={500}
+                          mb={1}
+                        >
                           Duration
                         </Typography>
                         <Typography variant="body1" fontWeight={600}>
                           {(() => {
                             const start = new Date(selectedEvent.start_date);
                             const end = new Date(selectedEvent.end_date);
-                            const diffTime = Math.abs(end.getTime() - start.getTime());
-                            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-                            return diffDays === 1 ? '1 day' : `${diffDays} days`;
+                            const diffTime = Math.abs(
+                              end.getTime() - start.getTime()
+                            );
+                            const diffDays = Math.ceil(
+                              diffTime / (1000 * 60 * 60 * 24)
+                            );
+                            return diffDays === 1
+                              ? "1 day"
+                              : `${diffDays} days`;
                           })()}
                         </Typography>
                       </Box>
 
                       <Box sx={{ mb: 2 }}>
-                        <Typography variant="body2" color="text.secondary" fontWeight={500} mb={1}>
+                        <Typography
+                          variant="body2"
+                          color="text.secondary"
+                          fontWeight={500}
+                          mb={1}
+                        >
                           Created
                         </Typography>
                         <Typography variant="body1" fontWeight={500}>
-                          {new Date(selectedEvent.created_at).toLocaleDateString('en-US', {
-                            year: 'numeric',
-                            month: 'long',
-                            day: 'numeric',
-                            hour: '2-digit',
-                            minute: '2-digit',
+                          {new Date(
+                            selectedEvent.created_at
+                          ).toLocaleDateString("en-US", {
+                            year: "numeric",
+                            month: "long",
+                            day: "numeric",
+                            hour: "2-digit",
+                            minute: "2-digit",
                           })}
                         </Typography>
                       </Box>
 
                       <Box>
-                        <Typography variant="body2" color="text.secondary" fontWeight={500} mb={1}>
+                        <Typography
+                          variant="body2"
+                          color="text.secondary"
+                          fontWeight={500}
+                          mb={1}
+                        >
                           Last Updated
                         </Typography>
                         <Typography variant="body1" fontWeight={500}>
-                          {new Date(selectedEvent.updated_at).toLocaleDateString('en-US', {
-                            year: 'numeric',
-                            month: 'long',
-                            day: 'numeric',
-                            hour: '2-digit',
-                            minute: '2-digit',
+                          {new Date(
+                            selectedEvent.updated_at
+                          ).toLocaleDateString("en-US", {
+                            year: "numeric",
+                            month: "long",
+                            day: "numeric",
+                            hour: "2-digit",
+                            minute: "2-digit",
                           })}
                         </Typography>
                       </Box>
@@ -884,11 +957,11 @@ const EventsViewModern: React.FC<EventsViewModernProps> = ({ userRole }) => {
               </DialogContent>
 
               <DialogActions sx={{ px: 3, pb: 3 }}>
-                <Button 
-                  onClick={() => setViewDialogOpen(false)} 
+                <Button
+                  onClick={() => setViewDialogOpen(false)}
                   variant="contained"
-                  sx={{ 
-                    borderRadius: 2, 
+                  sx={{
+                    borderRadius: 2,
                     px: 3,
                     background: `linear-gradient(135deg, ${theme.palette.secondary.main}, ${theme.palette.secondary.dark})`,
                   }}

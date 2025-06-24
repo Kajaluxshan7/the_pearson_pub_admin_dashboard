@@ -33,7 +33,7 @@ import { addonService, itemService } from "../services/api";
 import type { Addon, Item, PaginatedResponse } from "../services/api";
 import { ModernTable } from "./ModernTables";
 import { ConfirmDialog } from "./ConfirmDialog";
-import Grid  from "@mui/material/GridLegacy";
+import Grid from "@mui/material/GridLegacy";
 
 interface AddonsViewModernProps {
   userRole: "admin" | "superadmin";
@@ -55,7 +55,8 @@ const AddonsViewModern: React.FC<AddonsViewModernProps> = ({ userRole }) => {
   const [selectedItem, setSelectedItem] = useState<string>("");
   // Modal states
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false);  const [selectedAddon, setSelectedAddon] = useState<Addon | null>(null);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [selectedAddon, setSelectedAddon] = useState<Addon | null>(null);
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
   const [addonToDelete, setAddonToDelete] = useState<Addon | null>(null);
   const [viewDialogOpen, setViewDialogOpen] = useState(false);
@@ -197,13 +198,13 @@ const AddonsViewModern: React.FC<AddonsViewModernProps> = ({ userRole }) => {
         itemId: addon.itemId,
         category_type: addon.category_type,
       };
-      
+
       await addonService.create(duplicatedAddon);
-      showAlert('success', `Addon "${addon.name}" has been duplicated`);
+      showAlert("success", `Addon "${addon.name}" has been duplicated`);
       fetchAddons();
     } catch (error) {
-      console.error('Error duplicating addon:', error);
-      showAlert('error', 'Failed to duplicate addon');
+      console.error("Error duplicating addon:", error);
+      showAlert("error", "Failed to duplicate addon");
     }
   };
 
@@ -370,7 +371,6 @@ const AddonsViewModern: React.FC<AddonsViewModernProps> = ({ userRole }) => {
             </Button>
           )}
         </Box>
-
         {/* Alert */}
         {alert && (
           <Alert
@@ -381,7 +381,6 @@ const AddonsViewModern: React.FC<AddonsViewModernProps> = ({ userRole }) => {
             {alert.message}
           </Alert>
         )}
-
         {/* Filters */}
         <Card
           elevation={0}
@@ -432,7 +431,6 @@ const AddonsViewModern: React.FC<AddonsViewModernProps> = ({ userRole }) => {
             </Box>
           </CardContent>
         </Card>
-
         {/* Data Grid */}
         <Card elevation={0} sx={{ height: 600 }}>
           {loading ? (
@@ -446,7 +444,8 @@ const AddonsViewModern: React.FC<AddonsViewModernProps> = ({ userRole }) => {
                 />
               ))}
             </Box>
-          ) : (            <ModernTable
+          ) : (
+            <ModernTable
               columns={columns}
               data={addons}
               loading={loading}
@@ -464,11 +463,11 @@ const AddonsViewModern: React.FC<AddonsViewModernProps> = ({ userRole }) => {
               onView={handleView}
               customActions={[
                 {
-                  id: 'duplicate-addon',
-                  label: 'Duplicate',
+                  id: "duplicate-addon",
+                  label: "Duplicate",
                   icon: <ContentCopy />,
                   onClick: handleDuplicateAddon,
-                  color: 'secondary',
+                  color: "secondary",
                 },
               ]}
               canEdit={() => userRole === "admin" || userRole === "superadmin"}
@@ -480,7 +479,6 @@ const AddonsViewModern: React.FC<AddonsViewModernProps> = ({ userRole }) => {
             />
           )}
         </Card>
-
         {/* Add/Edit Modal */}
         <Dialog
           open={isAddModalOpen || isEditModalOpen}
@@ -579,7 +577,8 @@ const AddonsViewModern: React.FC<AddonsViewModernProps> = ({ userRole }) => {
               {isAddModalOpen ? "Add" : "Update"}
             </Button>{" "}
           </DialogActions>
-        </Dialog>        {/* Confirm Delete Dialog */}
+        </Dialog>{" "}
+        {/* Confirm Delete Dialog */}
         <ConfirmDialog
           open={confirmDeleteOpen}
           title="Delete Addon"
@@ -590,7 +589,6 @@ const AddonsViewModern: React.FC<AddonsViewModernProps> = ({ userRole }) => {
             setAddonToDelete(null);
           }}
         />
-
         {/* View Addon Details Dialog */}
         <Dialog
           open={viewDialogOpen}
@@ -614,17 +612,21 @@ const AddonsViewModern: React.FC<AddonsViewModernProps> = ({ userRole }) => {
                       height: 60,
                       borderRadius: 3,
                       background: `linear-gradient(135deg, ${theme.palette.primary.main}, ${theme.palette.primary.dark})`,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      color: 'white',
-                      boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      color: "white",
+                      boxShadow: "0 4px 20px rgba(0,0,0,0.1)",
                     }}
                   >
                     <LocalOffer fontSize="large" />
                   </Box>
                   <Box>
-                    <Typography variant="h5" fontWeight={700} color="text.primary">
+                    <Typography
+                      variant="h5"
+                      fontWeight={700}
+                      color="text.primary"
+                    >
                       {selectedAddon.name}
                     </Typography>
                     <Box display="flex" gap={1} mt={0.5}>
@@ -632,51 +634,62 @@ const AddonsViewModern: React.FC<AddonsViewModernProps> = ({ userRole }) => {
                         label={`$${selectedAddon.price}`}
                         color="success"
                         size="small"
-                        sx={{ 
+                        sx={{
                           fontWeight: 600,
                           borderRadius: 2,
                         }}
                       />
-                      {selectedAddon.itemId && (() => {
-                        const associatedItem = items.find(item => item.id === selectedAddon.itemId);
-                        return associatedItem ? (
-                          <Chip
-                            label={associatedItem.name}
-                            color="primary"
-                            variant="outlined"
-                            size="small"
-                            sx={{ 
-                              fontWeight: 500,
-                              borderRadius: 2,
-                            }}
-                          />
-                        ) : null;
-                      })()}
+                      {selectedAddon.itemId &&
+                        (() => {
+                          const associatedItem = items.find(
+                            (item) => item.id === selectedAddon.itemId
+                          );
+                          return associatedItem ? (
+                            <Chip
+                              label={associatedItem.name}
+                              color="primary"
+                              variant="outlined"
+                              size="small"
+                              sx={{
+                                fontWeight: 500,
+                                borderRadius: 2,
+                              }}
+                            />
+                          ) : null;
+                        })()}
                     </Box>
                   </Box>
                 </Box>
               </DialogTitle>
-              
+
               <DialogContent sx={{ px: 3, pb: 3 }}>
                 <Grid container spacing={3}>
                   {/* Left Column - Basic Info */}
                   <Grid item xs={12} md={6}>
-                    <Paper 
-                      elevation={0} 
-                      sx={{ 
-                        p: 3, 
+                    <Paper
+                      elevation={0}
+                      sx={{
+                        p: 3,
                         borderRadius: 3,
                         border: 1,
-                        borderColor: 'divider',
+                        borderColor: "divider",
                         background: theme.palette.background.paper,
                       }}
                     >
-                      <Typography variant="h6" sx={{ mb: 2, fontWeight: 600, color: 'primary.main' }}>
+                      <Typography
+                        variant="h6"
+                        sx={{ mb: 2, fontWeight: 600, color: "primary.main" }}
+                      >
                         Basic Information
                       </Typography>
-                      
+
                       <Box sx={{ mb: 2 }}>
-                        <Typography variant="body2" color="text.secondary" fontWeight={500} mb={1}>
+                        <Typography
+                          variant="body2"
+                          color="text.secondary"
+                          fontWeight={500}
+                          mb={1}
+                        >
                           Name
                         </Typography>
                         <Typography variant="body1" fontWeight={600}>
@@ -685,12 +698,21 @@ const AddonsViewModern: React.FC<AddonsViewModernProps> = ({ userRole }) => {
                       </Box>
 
                       <Box sx={{ mb: 2 }}>
-                        <Typography variant="body2" color="text.secondary" fontWeight={500} mb={1}>
+                        <Typography
+                          variant="body2"
+                          color="text.secondary"
+                          fontWeight={500}
+                          mb={1}
+                        >
                           Price
                         </Typography>
                         <Box display="flex" alignItems="center" gap={1}>
                           <AttachMoney color="success" fontSize="small" />
-                          <Typography variant="h6" color="success.main" fontWeight={700}>
+                          <Typography
+                            variant="h6"
+                            color="success.main"
+                            fontWeight={700}
+                          >
                             ${selectedAddon.price}
                           </Typography>
                         </Box>
@@ -698,7 +720,12 @@ const AddonsViewModern: React.FC<AddonsViewModernProps> = ({ userRole }) => {
 
                       {selectedAddon.description && (
                         <Box>
-                          <Typography variant="body2" color="text.secondary" fontWeight={500} mb={1}>
+                          <Typography
+                            variant="body2"
+                            color="text.secondary"
+                            fontWeight={500}
+                            mb={1}
+                          >
                             Description
                           </Typography>
                           <Typography variant="body1" sx={{ lineHeight: 1.6 }}>
@@ -711,32 +738,42 @@ const AddonsViewModern: React.FC<AddonsViewModernProps> = ({ userRole }) => {
 
                   {/* Right Column - Item Association & Details */}
                   <Grid item xs={12} md={6}>
-                    <Paper 
-                      elevation={0} 
-                      sx={{ 
-                        p: 3, 
+                    <Paper
+                      elevation={0}
+                      sx={{
+                        p: 3,
                         borderRadius: 3,
                         border: 1,
-                        borderColor: 'divider',
+                        borderColor: "divider",
                         background: theme.palette.background.paper,
                       }}
                     >
-                      <Typography variant="h6" sx={{ mb: 2, fontWeight: 600, color: 'primary.main' }}>
+                      <Typography
+                        variant="h6"
+                        sx={{ mb: 2, fontWeight: 600, color: "primary.main" }}
+                      >
                         Association & Details
                       </Typography>
-                      
-                      {selectedAddon.itemId && (
+
+                      {selectedAddon.itemId &&
                         (() => {
-                          const associatedItem = items.find(item => item.id === selectedAddon.itemId);
+                          const associatedItem = items.find(
+                            (item) => item.id === selectedAddon.itemId
+                          );
                           return associatedItem ? (
                             <Box sx={{ mb: 2 }}>
-                              <Typography variant="body2" color="text.secondary" fontWeight={500} mb={1}>
+                              <Typography
+                                variant="body2"
+                                color="text.secondary"
+                                fontWeight={500}
+                                mb={1}
+                              >
                                 Associated Item
                               </Typography>
                               <Chip
                                 label={associatedItem.name}
                                 color="primary"
-                                sx={{ 
+                                sx={{
                                   fontWeight: 600,
                                   borderRadius: 2,
                                   px: 1,
@@ -744,35 +781,48 @@ const AddonsViewModern: React.FC<AddonsViewModernProps> = ({ userRole }) => {
                               />
                             </Box>
                           ) : null;
-                        })()
-                      )}
+                        })()}
 
                       <Box sx={{ mb: 2 }}>
-                        <Typography variant="body2" color="text.secondary" fontWeight={500} mb={1}>
+                        <Typography
+                          variant="body2"
+                          color="text.secondary"
+                          fontWeight={500}
+                          mb={1}
+                        >
                           Created
                         </Typography>
                         <Typography variant="body1" fontWeight={500}>
-                          {new Date(selectedAddon.created_at).toLocaleDateString('en-US', {
-                            year: 'numeric',
-                            month: 'long',
-                            day: 'numeric',
-                            hour: '2-digit',
-                            minute: '2-digit',
+                          {new Date(
+                            selectedAddon.created_at
+                          ).toLocaleDateString("en-US", {
+                            year: "numeric",
+                            month: "long",
+                            day: "numeric",
+                            hour: "2-digit",
+                            minute: "2-digit",
                           })}
                         </Typography>
                       </Box>
 
                       <Box>
-                        <Typography variant="body2" color="text.secondary" fontWeight={500} mb={1}>
+                        <Typography
+                          variant="body2"
+                          color="text.secondary"
+                          fontWeight={500}
+                          mb={1}
+                        >
                           Last Updated
                         </Typography>
                         <Typography variant="body1" fontWeight={500}>
-                          {new Date(selectedAddon.updated_at).toLocaleDateString('en-US', {
-                            year: 'numeric',
-                            month: 'long',
-                            day: 'numeric',
-                            hour: '2-digit',
-                            minute: '2-digit',
+                          {new Date(
+                            selectedAddon.updated_at
+                          ).toLocaleDateString("en-US", {
+                            year: "numeric",
+                            month: "long",
+                            day: "numeric",
+                            hour: "2-digit",
+                            minute: "2-digit",
                           })}
                         </Typography>
                       </Box>
@@ -782,11 +832,11 @@ const AddonsViewModern: React.FC<AddonsViewModernProps> = ({ userRole }) => {
               </DialogContent>
 
               <DialogActions sx={{ px: 3, pb: 3 }}>
-                <Button 
-                  onClick={() => setViewDialogOpen(false)} 
+                <Button
+                  onClick={() => setViewDialogOpen(false)}
                   variant="contained"
-                  sx={{ 
-                    borderRadius: 2, 
+                  sx={{
+                    borderRadius: 2,
                     px: 3,
                     background: `linear-gradient(135deg, ${theme.palette.primary.main}, ${theme.palette.primary.dark})`,
                   }}

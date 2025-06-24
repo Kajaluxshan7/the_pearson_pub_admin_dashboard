@@ -355,7 +355,9 @@ export const ItemsView: React.FC = () => {
         availability: !item.availability,
       });
       showSnackbar(
-        `Item ${item.availability ? "marked as unavailable" : "marked as available"}`,
+        `Item ${
+          item.availability ? "marked as unavailable" : "marked as available"
+        }`,
         "success"
       );
       fetchItems();
@@ -560,7 +562,8 @@ export const ItemsView: React.FC = () => {
             </Grid>
           </Grid>
         </Paper>{" "}
-        {/* Data Table */}        <ModernTable
+        {/* Data Table */}{" "}
+        <ModernTable
           columns={columns}
           data={items}
           loading={loading}
@@ -574,25 +577,25 @@ export const ItemsView: React.FC = () => {
           onView={handleView}
           customActions={[
             {
-              id: 'toggle-availability',
-              label: 'Toggle Availability',
+              id: "toggle-availability",
+              label: "Toggle Availability",
               icon: <CheckCircle />,
               onClick: handleToggleAvailability,
-              color: 'success',
+              color: "success",
             },
             {
-              id: 'toggle-visibility',
-              label: 'Toggle Visibility',
+              id: "toggle-visibility",
+              label: "Toggle Visibility",
               icon: <Visibility />,
               onClick: handleToggleVisibility,
-              color: 'primary',
+              color: "primary",
             },
             {
-              id: 'toggle-favourite',
-              label: 'Toggle Favourite',
+              id: "toggle-favourite",
+              label: "Toggle Favourite",
               icon: <Favorite />,
               onClick: handleToggleFavourite,
-              color: 'secondary',
+              color: "secondary",
             },
           ]}
           title="Items"
