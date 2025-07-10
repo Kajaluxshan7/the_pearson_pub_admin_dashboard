@@ -24,7 +24,6 @@ import { ConfirmDialog } from "./ConfirmDialog";
 interface WingSauceFormData {
   name: string;
   description: string;
-  lastEditedByAdminId: string;
 }
 
 export const WingSaucesView: React.FC = () => {
@@ -45,7 +44,6 @@ export const WingSaucesView: React.FC = () => {
   const [formData, setFormData] = useState<WingSauceFormData>({
     name: "",
     description: "",
-    lastEditedByAdminId: "",
   });
 
   const [snackbar, setSnackbar] = useState({
@@ -101,7 +99,6 @@ export const WingSaucesView: React.FC = () => {
     setFormData({
       name: wingSauce.name,
       description: wingSauce.description || "",
-      lastEditedByAdminId: wingSauce.lastEditedByAdminId || "",
     });
     setEditDialogOpen(true);
   };
@@ -111,7 +108,6 @@ export const WingSaucesView: React.FC = () => {
     setFormData({
       name: wingSauce.name,
       description: wingSauce.description || "",
-      lastEditedByAdminId: wingSauce.lastEditedByAdminId || "",
     });
     setEditDialogOpen(true);
   };
@@ -139,11 +135,17 @@ export const WingSaucesView: React.FC = () => {
 
   const handleSaveWingSauce = async () => {
     try {
+      // Only send the required fields (exclude lastEditedByAdminId)
+      const saveData = {
+        name: formData.name,
+        description: formData.description,
+      };
+
       if (selectedWingSauce) {
-        await wingSauceService.update(selectedWingSauce.id, formData);
+        await wingSauceService.update(selectedWingSauce.id, saveData);
         showSnackbar("Wing sauce updated successfully", "success");
       } else {
-        await wingSauceService.create(formData);
+        await wingSauceService.create(saveData);
         showSnackbar("Wing sauce added successfully", "success");
       }
 
@@ -161,7 +163,6 @@ export const WingSaucesView: React.FC = () => {
     setFormData({
       name: "",
       description: "",
-      lastEditedByAdminId: "",
     });
     setSelectedWingSauce(null);
   };
@@ -195,6 +196,16 @@ export const WingSaucesView: React.FC = () => {
       label: "Created Date",
       minWidth: 150,
       format: (value: any) => new Date(value).toLocaleDateString(),
+    },
+    {
+      id: "lastEditedByAdmin",
+      label: "Last Edited By",
+      minWidth: 180,
+      format: (value: any) => (
+        <Typography variant="body2" color="text.secondary">
+          {value?.email || "System"}
+        </Typography>
+      ),
     },
   ];
 

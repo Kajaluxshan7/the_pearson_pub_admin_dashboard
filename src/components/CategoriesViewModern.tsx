@@ -125,10 +125,14 @@ export const CategoriesView: React.FC = () => {
       ),
     },
     {
-      id: "created_at",
-      label: "Created",
-      minWidth: 120,
-      format: (value: any) => new Date(value).toLocaleDateString(),
+      id: "lastEditedByAdmin",
+      label: "Last Edited By",
+      minWidth: 180,
+      format: (value: any) => (
+        <Typography variant="body2" color="text.secondary">
+          {value?.email || "System"}
+        </Typography>
+      ),
     },
     {
       id: "updated_at",

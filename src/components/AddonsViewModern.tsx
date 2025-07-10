@@ -14,11 +14,11 @@ import {
   Select,
   MenuItem,
   Chip,
-  Alert,
   Skeleton,
   Card,
   CardContent,
   useTheme,
+  Snackbar,
 } from "@mui/material";
 import {
   Add,
@@ -71,10 +71,18 @@ const AddonsViewModern: React.FC<AddonsViewModernProps> = ({ userRole }) => {
   });
 
   // Feedback states
-  const [alert, setAlert] = useState<{
-    type: "success" | "error";
-    message: string;
-  } | null>(null);
+  const [snackbar, setSnackbar] = useState({
+    open: false,
+    message: "",
+    severity: "success" as "success" | "error",
+  });
+
+  const showSnackbar = (
+    message: string,
+    severity: "success" | "error" = "success"
+  ) => {
+    setSnackbar({ open: true, message, severity });
+  };
 
   useEffect(() => {
     fetchAddons();
@@ -91,13 +99,14 @@ const AddonsViewModern: React.FC<AddonsViewModernProps> = ({ userRole }) => {
       const response: PaginatedResponse<Addon> = await addonService.getAll(
         paginationModel.page + 1,
         paginationModel.pageSize,
-        selectedItem || undefined
+        selectedItem || undefined,
+        searchTerm || undefined
       );
       setAddons(response.data);
       setTotalCount(response.total);
     } catch (error) {
       console.error("Error fetching addons:", error);
-      showAlert("error", "Failed to fetch addons");
+      showSnackbar("Failed to fetch addons", "error");
     } finally {
       setLoading(false);
     }
@@ -124,11 +133,6 @@ const AddonsViewModern: React.FC<AddonsViewModernProps> = ({ userRole }) => {
     }
   };
 
-  const showAlert = (type: "success" | "error", message: string) => {
-    setAlert({ type, message });
-    setTimeout(() => setAlert(null), 5000);
-  };
-
   const handleAddAddon = async () => {
     try {
       await addonService.create({
@@ -142,10 +146,10 @@ const AddonsViewModern: React.FC<AddonsViewModernProps> = ({ userRole }) => {
       resetForm();
       fetchAddons();
       fetchAddonCount();
-      showAlert("success", "Addon created successfully");
+      showSnackbar("Addon created successfully", "success");
     } catch (error) {
       console.error("Error creating addon:", error);
-      showAlert("error", "Failed to create addon");
+      showSnackbar("Failed to create addon", "error");
     }
   };
 
@@ -162,10 +166,10 @@ const AddonsViewModern: React.FC<AddonsViewModernProps> = ({ userRole }) => {
       setIsEditModalOpen(false);
       resetForm();
       fetchAddons();
-      showAlert("success", "Addon updated successfully");
+      showSnackbar("Addon updated successfully", "success");
     } catch (error) {
       console.error("Error updating addon:", error);
-      showAlert("error", "Failed to update addon");
+      showSnackbar("Failed to update addon", "error");
     }
   };
   const handleDeleteAddon = (addon: Addon) => {
@@ -180,31 +184,25 @@ const AddonsViewModern: React.FC<AddonsViewModernProps> = ({ userRole }) => {
       await addonService.delete(addonToDelete.id);
       fetchAddons();
       fetchAddonCount();
-      showAlert("success", "Addon deleted successfully");
+      showSnackbar("Addon deleted successfully", "success");
       setConfirmDeleteOpen(false);
       setAddonToDelete(null);
     } catch (error) {
       console.error("Error deleting addon:", error);
-      showAlert("error", "Failed to delete addon");
+      showSnackbar("Failed to delete addon", "error");
     }
   };
 
   const handleDuplicateAddon = async (addon: Addon) => {
     try {
-      const duplicatedAddon = {
-        name: `${addon.name} (Copy)`,
-        price: addon.price,
-        description: addon.description,
-        itemId: addon.itemId,
-        category_type: addon.category_type,
-      };
-
-      await addonService.create(duplicatedAddon);
-      showAlert("success", `Addon "${addon.name}" has been duplicated`);
+      await addonService.duplicate(addon.id);
+      showSnackbar(`Addon "${addon.name}" has been duplicated`, "success");
       fetchAddons();
     } catch (error) {
       console.error("Error duplicating addon:", error);
-      showAlert("error", "Failed to duplicate addon");
+      const errorMessage =
+        error instanceof Error ? error.message : "Failed to duplicate addon";
+      showSnackbar(errorMessage, "error");
     }
   };
 
@@ -371,16 +369,6 @@ const AddonsViewModern: React.FC<AddonsViewModernProps> = ({ userRole }) => {
             </Button>
           )}
         </Box>
-        {/* Alert */}
-        {alert && (
-          <Alert
-            severity={alert.type}
-            sx={{ mb: 2 }}
-            onClose={() => setAlert(null)}
-          >
-            {alert.message}
-          </Alert>
-        )}
         {/* Filters */}
         <Card
           elevation={0}
@@ -790,6 +778,20 @@ const AddonsViewModern: React.FC<AddonsViewModernProps> = ({ userRole }) => {
                           fontWeight={500}
                           mb={1}
                         >
+                          Last Edited By
+                        </Typography>
+                        <Typography variant="body1" fontWeight={500}>
+                          {selectedAddon.lastEditedByAdmin?.email || "System"}
+                        </Typography>
+                      </Box>
+
+                      <Box sx={{ mb: 2 }}>
+                        <Typography
+                          variant="body2"
+                          color="text.secondary"
+                          fontWeight={500}
+                          mb={1}
+                        >
                           Created
                         </Typography>
                         <Typography variant="body1" fontWeight={500}>
@@ -847,6 +849,14 @@ const AddonsViewModern: React.FC<AddonsViewModernProps> = ({ userRole }) => {
             </>
           )}
         </Dialog>
+        {/* Snackbar for notifications */}
+        <Snackbar
+          open={snackbar.open}
+          autoHideDuration={6000}
+          onClose={() => setSnackbar({ ...snackbar, open: false })}
+          anchorOrigin={{ vertical: "bottom", horizontal: "left" }}
+          message={snackbar.message}
+        />
       </Paper>
     </motion.div>
   );

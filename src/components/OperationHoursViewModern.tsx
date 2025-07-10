@@ -21,6 +21,7 @@ import {
   useTheme,
   Switch,
   FormControlLabel,
+  Snackbar,
 } from "@mui/material";
 import {
   Add,
@@ -40,13 +41,13 @@ interface OperationHoursViewModernProps {
 }
 
 const DAYS_OF_WEEK = [
-  "Monday",
-  "Tuesday",
-  "Wednesday",
-  "Thursday",
-  "Friday",
-  "Saturday",
-  "Sunday",
+  { label: "Monday", value: "monday" },
+  { label: "Tuesday", value: "tuesday" },
+  { label: "Wednesday", value: "wednesday" },
+  { label: "Thursday", value: "thursday" },
+  { label: "Friday", value: "friday" },
+  { label: "Saturday", value: "saturday" },
+  { label: "Sunday", value: "sunday" },
 ];
 
 const OperationHoursViewModern: React.FC<OperationHoursViewModernProps> = ({
@@ -81,10 +82,15 @@ const OperationHoursViewModern: React.FC<OperationHoursViewModernProps> = ({
   });
 
   // Feedback states
-  const [alert, setAlert] = useState<{
-    type: "success" | "error";
+  const [snackbar, setSnackbar] = useState<{
+    open: boolean;
     message: string;
-  } | null>(null);
+    severity: "success" | "error";
+  }>({
+    open: false,
+    message: "",
+    severity: "success",
+  });
 
   useEffect(() => {
     fetchOperationHours();
@@ -122,9 +128,8 @@ const OperationHoursViewModern: React.FC<OperationHoursViewModernProps> = ({
     }
   };
 
-  const showAlert = (type: "success" | "error", message: string) => {
-    setAlert({ type, message });
-    setTimeout(() => setAlert(null), 5000);
+  const showAlert = (severity: "success" | "error", message: string) => {
+    setSnackbar({ open: true, message, severity });
   };
 
   const handleAddOperationHour = async () => {
@@ -253,6 +258,11 @@ const OperationHoursViewModern: React.FC<OperationHoursViewModernProps> = ({
     const displayHour = hour % 12 || 12;
     return `${displayHour}:${minutes} ${ampm}`;
   };
+
+  const formatDay = (day: string) => {
+    const dayObj = DAYS_OF_WEEK.find((d) => d.value === day);
+    return dayObj ? dayObj.label : day;
+  };
   const columns = [
     {
       id: "day",
@@ -261,7 +271,12 @@ const OperationHoursViewModern: React.FC<OperationHoursViewModernProps> = ({
       format: (value: any) => (
         <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
           <Schedule sx={{ fontSize: 20, color: "primary.main" }} />
-          <Chip label={value} color="primary" variant="outlined" size="small" />
+          <Chip
+            label={formatDay(value)}
+            color="primary"
+            variant="outlined"
+            size="small"
+          />
         </Box>
       ),
     },
@@ -315,6 +330,16 @@ const OperationHoursViewModern: React.FC<OperationHoursViewModernProps> = ({
       minWidth: 150,
       format: (value: any) => new Date(value).toLocaleDateString(),
     },
+    {
+      id: "lastEditedByAdmin",
+      label: "Last Edited By",
+      minWidth: 180,
+      format: (value: any) => (
+        <Typography variant="body2" color="text.secondary">
+          {value?.email || "System"}
+        </Typography>
+      ),
+    },
   ];
 
   return (
@@ -365,16 +390,6 @@ const OperationHoursViewModern: React.FC<OperationHoursViewModernProps> = ({
             </Button>
           )}
         </Box>
-        {/* Alert */}
-        {alert && (
-          <Alert
-            severity={alert.type}
-            sx={{ mb: 2 }}
-            onClose={() => setAlert(null)}
-          >
-            {alert.message}
-          </Alert>
-        )}
         {/* Filters */}
         <Card
           elevation={0}
@@ -391,8 +406,8 @@ const OperationHoursViewModern: React.FC<OperationHoursViewModernProps> = ({
                 >
                   <MenuItem value="">All Days</MenuItem>
                   {DAYS_OF_WEEK.map((day) => (
-                    <MenuItem key={day} value={day}>
-                      {day}
+                    <MenuItem key={day.value} value={day.value}>
+                      {day.label}
                     </MenuItem>
                   ))}
                 </Select>
@@ -488,8 +503,8 @@ const OperationHoursViewModern: React.FC<OperationHoursViewModernProps> = ({
                   }
                 >
                   {DAYS_OF_WEEK.map((day) => (
-                    <MenuItem key={day} value={day}>
-                      {day}
+                    <MenuItem key={day.value} value={day.value}>
+                      {day.label}
                     </MenuItem>
                   ))}
                 </Select>
@@ -787,6 +802,21 @@ const OperationHoursViewModern: React.FC<OperationHoursViewModernProps> = ({
             </>
           )}
         </Dialog>
+        {/* Snackbar for notifications */}
+        <Snackbar
+          open={snackbar.open}
+          autoHideDuration={5000}
+          onClose={() => setSnackbar({ ...snackbar, open: false })}
+          anchorOrigin={{ vertical: "bottom", horizontal: "left" }}
+        >
+          <Alert
+            onClose={() => setSnackbar({ ...snackbar, open: false })}
+            severity={snackbar.severity}
+            sx={{ width: "100%" }}
+          >
+            {snackbar.message}
+          </Alert>
+        </Snackbar>
       </Paper>
     </motion.div>
   );

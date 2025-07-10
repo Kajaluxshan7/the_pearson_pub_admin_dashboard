@@ -58,6 +58,7 @@ export interface Category {
   name: string;
   description?: string;
   lastEditedByAdminId?: string;
+  lastEditedByAdmin?: Admin;
   created_at: string;
   updated_at: string;
 }
@@ -76,6 +77,7 @@ export interface Item {
   visibility: boolean;
   is_favourite: boolean;
   lastEditedByAdminId?: string;
+  lastEditedByAdmin?: Admin;
   created_at: string;
   updated_at: string;
 }
@@ -88,6 +90,7 @@ export interface Addon {
   description?: string;
   category_type?: string;
   lastEditedByAdminId?: string;
+  lastEditedByAdmin?: Admin;
   created_at: string;
   updated_at: string;
 }
@@ -100,6 +103,7 @@ export interface Event {
   start_date: string;
   end_date: string;
   lastEditedByAdminId?: string;
+  lastEditedByAdmin?: Admin;
   created_at: string;
   updated_at: string;
 }
@@ -111,6 +115,7 @@ export interface OperationHour {
   close_time: string;
   status: boolean;
   lastEditedByAdminId?: string;
+  lastEditedByAdmin?: Admin;
   created_at: string;
   updated_at: string;
 }
@@ -135,6 +140,7 @@ export interface Special {
   seasonal_start_date?: string;
   seasonal_end_date?: string;
   lastEditedByAdminId: string;
+  lastEditedByAdmin?: Admin;
   created_at: string;
   updated_at: string;
 }
@@ -144,6 +150,7 @@ export interface WingSauce {
   name: string;
   description?: string;
   lastEditedByAdminId?: string;
+  lastEditedByAdmin?: Admin;
   created_at: string;
   updated_at: string;
 }
@@ -154,6 +161,7 @@ export interface SubstituteSide {
   price: number;
   description?: string;
   lastEditedByAdminId?: string;
+  lastEditedByAdmin?: Admin;
   created_at: string;
   updated_at: string;
 }
@@ -162,7 +170,12 @@ export interface ItemAddonsRelation {
   id: string;
   itemId: string;
   addonId: string;
+  item?: Item; // Optional joined item data
+  addon?: Addon; // Optional joined addon data
+  lastEditedByAdminId?: string;
+  lastEditedByAdmin?: Admin;
   created_at: string;
+  updated_at: string;
 }
 
 // Task interface for dashboard
@@ -294,10 +307,11 @@ export const addonService = {
   getAll: (
     page = 1,
     limit = 10,
-    itemId?: string
+    itemId?: string,
+    search?: string
   ): Promise<PaginatedResponse<Addon>> =>
     api
-      .get("/addons", { params: { page, limit, itemId } })
+      .get("/addons", { params: { page, limit, itemId, search } })
       .then((res) => res.data),
 
   getById: (id: string): Promise<Addon> =>
@@ -311,6 +325,10 @@ export const addonService = {
 
   delete: (id: string): Promise<void> =>
     api.delete(`/addons/${id}`).then((res) => res.data),
+
+  duplicate: (id: string): Promise<Addon> =>
+    api.post(`/addons/${id}/duplicate`).then((res) => res.data),
+
   getCount: (): Promise<number> =>
     api.get("/addons/count").then((res) => res.data),
 };
@@ -319,10 +337,11 @@ export const eventService = {
   getAll: (
     page = 1,
     limit = 10,
-    dateRange?: { startDate?: string; endDate?: string }
+    dateRange?: { startDate?: string; endDate?: string },
+    search?: string
   ): Promise<PaginatedResponse<Event>> =>
     api
-      .get("/events", { params: { page, limit, ...dateRange } })
+      .get("/events", { params: { page, limit, search, ...dateRange } })
       .then((res) => res.data),
 
   getById: (id: string): Promise<Event> =>

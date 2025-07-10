@@ -38,6 +38,7 @@ import {
   type PaginatedResponse,
 } from "../services/api";
 import { ModernTable } from "./ModernTables";
+import { ConfirmDialog } from "./ConfirmDialog";
 
 interface AdminFormData {
   email: string;
@@ -65,7 +66,9 @@ export const AdminsView: React.FC = () => {
   const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [viewDialogOpen, setViewDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedAdmin, setSelectedAdmin] = useState<Admin | null>(null);
+  const [adminToDelete, setAdminToDelete] = useState<Admin | null>(null);
   const [formData, setFormData] = useState<AdminFormData>({
     email: "",
     role: "admin",
@@ -112,7 +115,7 @@ export const AdminsView: React.FC = () => {
       }
 
       if (statusFilter !== "all") {
-        params.is_verified = statusFilter === "active";
+        params.status = statusFilter === "active";
       }
       const response: PaginatedResponse<Admin> =
         await adminService.getAllWithFilters(params);
@@ -266,19 +269,42 @@ export const AdminsView: React.FC = () => {
     setEditDialogOpen(true);
   };
 
-  const handleDelete = async (admin: Admin) => {
-    if (
-      window.confirm(`Are you sure you want to delete admin: ${admin.email}?`)
-    ) {
-      try {
-        await adminService.delete(admin.id);
-        showSnackbar(`Admin ${admin.email} deleted successfully`, "success");
-        fetchAdmins();
-      } catch (error) {
-        console.error("Error deleting admin:", error);
-        showSnackbar("Error deleting admin", "error");
-      }
+  const handleDelete = (admin: Admin) => {
+    // Validate admin ID
+    if (!admin?.id) {
+      showSnackbar("Invalid admin ID", "error");
+      return;
     }
+    setAdminToDelete(admin);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!adminToDelete?.id) {
+      showSnackbar("Invalid admin ID", "error");
+      return;
+    }
+
+    try {
+      await adminService.delete(adminToDelete.id);
+      showSnackbar(
+        `Admin ${adminToDelete.email} deleted successfully`,
+        "success"
+      );
+      fetchAdmins();
+      setDeleteDialogOpen(false);
+      setAdminToDelete(null);
+    } catch (error: any) {
+      console.error("Error deleting admin:", error);
+      const message = error.response?.data?.message || "Error deleting admin";
+      showSnackbar(message, "error");
+      setDeleteDialogOpen(false);
+    }
+  };
+
+  const handleCancelDelete = () => {
+    setDeleteDialogOpen(false);
+    setAdminToDelete(null);
   };
 
   const handleInviteAdmin = async () => {
@@ -321,6 +347,12 @@ export const AdminsView: React.FC = () => {
   };
   const handleToggleStatus = async (admin: Admin) => {
     try {
+      // Validate admin ID
+      if (!admin?.id) {
+        showSnackbar("Invalid admin ID", "error");
+        return;
+      }
+
       await adminService.toggleStatus(admin.id);
       showSnackbar(
         `Admin ${admin.email} ${
@@ -1030,6 +1062,18 @@ export const AdminsView: React.FC = () => {
             </>
           )}
         </Dialog>
+
+        {/* Confirm Delete Dialog */}
+        <ConfirmDialog
+          open={deleteDialogOpen}
+          title="Delete Admin"
+          message={`Are you sure you want to delete admin: ${adminToDelete?.email}? This action cannot be undone.`}
+          onConfirm={handleConfirmDelete}
+          onCancel={handleCancelDelete}
+          confirmText="Delete"
+          cancelText="Cancel"
+          severity="error"
+        />
 
         {/* Snackbar */}
         <Snackbar

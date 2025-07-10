@@ -232,8 +232,11 @@ export const SpecialsView: React.FC = () => {
   };
   const handleSaveSpecial = async () => {
     try {
+      // Remove lastEditedByAdminId from saveData as it's set by backend
+      const { lastEditedByAdminId, ...formDataWithoutAdminId } = formData;
+
       const saveData = {
-        ...formData,
+        ...formDataWithoutAdminId,
         price: parseFloat(formData.price),
         seasonal_start_date: formData.seasonal_start_date || undefined,
         seasonal_end_date: formData.seasonal_end_date || undefined,
@@ -353,6 +356,16 @@ export const SpecialsView: React.FC = () => {
       label: "Created Date",
       minWidth: 150,
       format: (value: any) => new Date(value).toLocaleDateString(),
+    },
+    {
+      id: "lastEditedByAdmin",
+      label: "Last Edited By",
+      minWidth: 180,
+      format: (value: any) => (
+        <Typography variant="body2" color="text.secondary">
+          {value?.email || "System"}
+        </Typography>
+      ),
     },
   ];
 

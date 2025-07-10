@@ -25,7 +25,6 @@ interface SubstituteSideFormData {
   name: string;
   price: string;
   description: string;
-  lastEditedByAdminId: string;
 }
 
 export const SubstituteSidesView: React.FC = () => {
@@ -46,7 +45,6 @@ export const SubstituteSidesView: React.FC = () => {
     name: "",
     price: "",
     description: "",
-    lastEditedByAdminId: "",
   });
 
   const [snackbar, setSnackbar] = useState({
@@ -103,7 +101,6 @@ export const SubstituteSidesView: React.FC = () => {
       name: substituteSide.name,
       price: substituteSide.price.toString(),
       description: substituteSide.description || "",
-      lastEditedByAdminId: substituteSide.lastEditedByAdminId || "",
     });
     setEditDialogOpen(true);
   };
@@ -114,7 +111,6 @@ export const SubstituteSidesView: React.FC = () => {
       name: substituteSide.name,
       price: substituteSide.price.toString(),
       description: substituteSide.description || "",
-      lastEditedByAdminId: substituteSide.lastEditedByAdminId || "",
     });
     setEditDialogOpen(true);
   };
@@ -170,7 +166,6 @@ export const SubstituteSidesView: React.FC = () => {
       name: "",
       price: "",
       description: "",
-      lastEditedByAdminId: "",
     });
     setSelectedSubstituteSide(null);
   };
@@ -217,6 +212,16 @@ export const SubstituteSidesView: React.FC = () => {
       label: "Created Date",
       minWidth: 150,
       format: (value: any) => new Date(value).toLocaleDateString(),
+    },
+    {
+      id: "lastEditedByAdmin",
+      label: "Last Edited By",
+      minWidth: 180,
+      format: (value: any) => (
+        <Typography variant="body2" color="text.secondary">
+          {value?.email || "System"}
+        </Typography>
+      ),
     },
   ];
 

@@ -1,8 +1,15 @@
 import React, { useState, useEffect } from "react";
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  useLocation,
+} from "react-router-dom";
 import { ThemeProvider, createTheme } from "@mui/material/styles";
 import CssBaseline from "@mui/material/CssBaseline";
 import { AdminDashboard } from "./components/AdminDashboard";
 import { Login } from "./components/Login";
+import SetupPassword from "./pages/SetupPassword";
 
 const lightTheme = createTheme({
   palette: {
@@ -56,14 +63,26 @@ const darkTheme = createTheme({
   },
 });
 
-const App: React.FC = () => {
-  const [isDarkMode, setIsDarkMode] = useState(false);
+// Component to handle routing logic with access to useLocation
+const AppContent: React.FC<{
+  isDarkMode: boolean;
+  lightTheme: any;
+  darkTheme: any;
+  toggleTheme: () => void;
+}> = ({ isDarkMode, lightTheme, darkTheme, toggleTheme }) => {
+  const location = useLocation();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loading, setLoading] = useState(true);
+
   useEffect(() => {
+    // For setup-password route, don't check auth status
+    if (location.pathname.startsWith("/setup-password")) {
+      setLoading(false);
+      return;
+    }
     // Check if user is already logged in by verifying with backend
     checkAuthStatus();
-  }, []);
+  }, [location.pathname]);
 
   const checkAuthStatus = async () => {
     try {
@@ -101,12 +120,18 @@ const App: React.FC = () => {
     }
   };
 
-  const toggleTheme = () => {
-    setIsDarkMode(!isDarkMode);
-  };
-
   if (loading) {
     return null; // Or a loading spinner
+  }
+
+  // Handle setup-password route
+  if (location.pathname.startsWith("/setup-password")) {
+    return (
+      <ThemeProvider theme={isDarkMode ? darkTheme : lightTheme}>
+        <CssBaseline />
+        <SetupPassword />
+      </ThemeProvider>
+    );
   }
 
   if (!isAuthenticated) {
@@ -127,6 +152,32 @@ const App: React.FC = () => {
         onLogout={handleLogout}
       />
     </ThemeProvider>
+  );
+};
+
+const App: React.FC = () => {
+  const [isDarkMode, setIsDarkMode] = useState(false);
+
+  const toggleTheme = () => {
+    setIsDarkMode(!isDarkMode);
+  };
+
+  return (
+    <Router>
+      <Routes>
+        <Route
+          path="/*"
+          element={
+            <AppContent
+              isDarkMode={isDarkMode}
+              lightTheme={lightTheme}
+              darkTheme={darkTheme}
+              toggleTheme={toggleTheme}
+            />
+          }
+        />
+      </Routes>
+    </Router>
   );
 };
 

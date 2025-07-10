@@ -10,11 +10,12 @@ import {
   DialogContent,
   DialogActions,
   Chip,
-  Alert,
   Skeleton,
   Card,
   CardContent,
   useTheme,
+  Snackbar,
+  Alert,
 } from "@mui/material";
 import Grid from "@mui/material/GridLegacy";
 import {
@@ -54,6 +55,7 @@ const EventsViewModern: React.FC<EventsViewModernProps> = ({ userRole }) => {
   // Modal states
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isRescheduleModalOpen, setIsRescheduleModalOpen] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
   const [eventToDelete, setEventToDelete] = useState<Event | null>(null);
@@ -68,11 +70,25 @@ const EventsViewModern: React.FC<EventsViewModernProps> = ({ userRole }) => {
     images: [] as string[],
   });
 
+  // Image upload states
+  const [imageFiles, setImageFiles] = useState<File[]>([]);
+  const [imagePreviews, setImagePreviews] = useState<string[]>([]);
+
+  const [rescheduleData, setRescheduleData] = useState({
+    start_date: "",
+    end_date: "",
+  });
+
   // Feedback states
-  const [alert, setAlert] = useState<{
-    type: "success" | "error";
+  const [snackbar, setSnackbar] = useState<{
+    open: boolean;
     message: string;
-  } | null>(null);
+    severity: "success" | "error";
+  }>({
+    open: false,
+    message: "",
+    severity: "success",
+  });
 
   useEffect(() => {
     fetchEvents();
@@ -90,7 +106,8 @@ const EventsViewModern: React.FC<EventsViewModernProps> = ({ userRole }) => {
       const response: PaginatedResponse<Event> = await eventService.getAll(
         paginationModel.page + 1,
         paginationModel.pageSize,
-        dateRange
+        dateRange,
+        searchTerm || undefined
       );
       setEvents(response.data);
       setTotalCount(response.total);
@@ -111,19 +128,28 @@ const EventsViewModern: React.FC<EventsViewModernProps> = ({ userRole }) => {
     }
   };
 
-  const showAlert = (type: "success" | "error", message: string) => {
-    setAlert({ type, message });
-    setTimeout(() => setAlert(null), 5000);
+  const showAlert = (severity: "success" | "error", message: string) => {
+    setSnackbar({ open: true, message, severity });
   };
 
   const handleAddEvent = async () => {
     try {
+      let uploadedImageUrls: string[] = [];
+
+      // Upload new images if any
+      if (imageFiles.length > 0) {
+        uploadedImageUrls = await uploadImages(imageFiles);
+      }
+
+      // Combine existing URLs with uploaded URLs
+      const allImageUrls = [...formData.images, ...uploadedImageUrls];
+
       await eventService.create({
         name: formData.name,
         description: formData.description,
         start_date: formData.start_date,
         end_date: formData.end_date,
-        images: formData.images,
+        images: allImageUrls,
       });
       setIsAddModalOpen(false);
       resetForm();
@@ -139,12 +165,22 @@ const EventsViewModern: React.FC<EventsViewModernProps> = ({ userRole }) => {
   const handleEditEvent = async () => {
     if (!selectedEvent) return;
     try {
+      let uploadedImageUrls: string[] = [];
+
+      // Upload new images if any
+      if (imageFiles.length > 0) {
+        uploadedImageUrls = await uploadImages(imageFiles);
+      }
+
+      // Combine existing URLs with uploaded URLs
+      const allImageUrls = [...formData.images, ...uploadedImageUrls];
+
       await eventService.update(selectedEvent.id, {
         name: formData.name,
         description: formData.description,
         start_date: formData.start_date,
         end_date: formData.end_date,
-        images: formData.images,
+        images: allImageUrls,
       });
       setIsEditModalOpen(false);
       resetForm();
@@ -185,6 +221,175 @@ const EventsViewModern: React.FC<EventsViewModernProps> = ({ userRole }) => {
       images: [],
     });
     setSelectedEvent(null);
+    setImageFiles([]);
+    setImagePreviews([]);
+  };
+
+  // Image handling functions
+  const handleImageSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (!files) return;
+
+    const newFiles = Array.from(files);
+
+    // Validate total number of images (existing + new)
+    if (imageFiles.length + newFiles.length > 5) {
+      showAlert("error", "Maximum 5 images allowed");
+      return;
+    }
+
+    // Validate each file
+    const validFiles: File[] = [];
+    const errors: string[] = [];
+
+    for (const file of newFiles) {
+      // Check file size (1MB max)
+      if (file.size > 1024 * 1024) {
+        errors.push(`${file.name} exceeds 1MB limit`);
+        continue;
+      }
+
+      // Check file type
+      const allowedTypes = [
+        "image/jpeg",
+        "image/jpg",
+        "image/png",
+        "image/gif",
+        "image/webp",
+      ];
+      if (!allowedTypes.includes(file.type)) {
+        errors.push(
+          `${file.name} is not a valid image type (allowed: JPEG, PNG, GIF, WebP)`
+        );
+        continue;
+      }
+
+      validFiles.push(file);
+    }
+
+    // Show validation errors if any
+    if (errors.length > 0) {
+      showAlert("error", errors.join(", "));
+    }
+
+    // Process valid files
+    if (validFiles.length > 0) {
+      const newPreviews: string[] = [];
+      let processedCount = 0;
+
+      validFiles.forEach((file) => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          newPreviews.push(e.target?.result as string);
+          processedCount++;
+
+          if (processedCount === validFiles.length) {
+            setImageFiles((prev) => [...prev, ...validFiles]);
+            setImagePreviews((prev) => [...prev, ...newPreviews]);
+
+            if (validFiles.length > 0) {
+              showAlert(
+                "success",
+                `${validFiles.length} image(s) selected successfully`
+              );
+            }
+          }
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+
+    // Clear the input
+    event.target.value = "";
+  };
+
+  const uploadImages = async (files: File[]): Promise<string[]> => {
+    if (files.length === 0) return [];
+
+    // Validate number of files
+    if (files.length > 5) {
+      throw new Error("Maximum 5 images allowed");
+    }
+
+    // Validate each file
+    for (const file of files) {
+      // Check file size (1MB max)
+      if (file.size > 1024 * 1024) {
+        throw new Error(`File ${file.name} exceeds 1MB limit`);
+      }
+
+      // Check file type
+      const allowedTypes = [
+        "image/jpeg",
+        "image/jpg",
+        "image/png",
+        "image/gif",
+        "image/webp",
+      ];
+      if (!allowedTypes.includes(file.type)) {
+        throw new Error(`File ${file.name} is not a valid image type`);
+      }
+    }
+
+    try {
+      const formData = new FormData();
+      files.forEach((file) => {
+        formData.append("images", file);
+      });
+
+      const response = await fetch(
+        "http://localhost:5000/events/upload-images",
+        {
+          method: "POST",
+          credentials: "include",
+          body: formData,
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to upload images");
+      }
+
+      const result = await response.json();
+
+      // Use signed URLs if available for better security
+      return result.signedUrls || result.imageUrls;
+    } catch (error) {
+      console.error("Error uploading images:", error);
+      throw error;
+    }
+  };
+
+  const removeImagePreview = (index: number) => {
+    setImageFiles((prev) => prev.filter((_, i) => i !== index));
+    setImagePreviews((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const removeExistingImage = async (imageUrl: string, index: number) => {
+    try {
+      const encodedUrl = encodeURIComponent(imageUrl);
+      const response = await fetch(
+        `http://localhost:5000/events/images/${encodedUrl}`,
+        {
+          method: "DELETE",
+          credentials: "include",
+        }
+      );
+
+      if (response.ok) {
+        setFormData((prev) => ({
+          ...prev,
+          images: prev.images.filter((_, i) => i !== index),
+        }));
+        showAlert("success", "Image removed successfully");
+      } else {
+        showAlert("error", "Failed to remove image");
+      }
+    } catch (error) {
+      console.error("Error removing image:", error);
+      showAlert("error", "Failed to remove image");
+    }
   };
 
   const openAddModal = () => {
@@ -193,12 +398,21 @@ const EventsViewModern: React.FC<EventsViewModernProps> = ({ userRole }) => {
   };
 
   const openEditModal = (event: Event) => {
+    console.log("📝 Opening edit modal for event:", event);
     setSelectedEvent(event);
+    // Format datetime for datetime-local input (YYYY-MM-DDTHH:MM)
+    const startDateTime = event.start_date.includes("T")
+      ? event.start_date.substring(0, 16)
+      : event.start_date + "T00:00";
+    const endDateTime = event.end_date.includes("T")
+      ? event.end_date.substring(0, 16)
+      : event.end_date + "T00:00";
+
     setFormData({
       name: event.name,
       description: event.description || "",
-      start_date: event.start_date.split("T")[0], // Format for date input
-      end_date: event.end_date.split("T")[0],
+      start_date: startDateTime,
+      end_date: endDateTime,
       images: event.images || [],
     });
     setIsEditModalOpen(true);
@@ -213,6 +427,46 @@ const EventsViewModern: React.FC<EventsViewModernProps> = ({ userRole }) => {
   const handleView = (event: Event) => {
     setSelectedEvent(event);
     setViewDialogOpen(true);
+  };
+
+  const handleReschedule = (event: Event) => {
+    console.log("📅 Opening reschedule modal for event:", event);
+    setSelectedEvent(event);
+    // Format datetime for datetime-local input (YYYY-MM-DDTHH:MM)
+    const startDateTime = event.start_date.includes("T")
+      ? event.start_date.substring(0, 16)
+      : event.start_date + "T00:00";
+    const endDateTime = event.end_date.includes("T")
+      ? event.end_date.substring(0, 16)
+      : event.end_date + "T00:00";
+
+    setRescheduleData({
+      start_date: startDateTime,
+      end_date: endDateTime,
+    });
+    setIsRescheduleModalOpen(true);
+  };
+
+  const handleRescheduleEvent = async () => {
+    if (!selectedEvent) return;
+
+    try {
+      await eventService.update(selectedEvent.id, {
+        start_date: rescheduleData.start_date,
+        end_date: rescheduleData.end_date,
+      });
+      showAlert(
+        "success",
+        `Event "${selectedEvent.name}" has been rescheduled`
+      );
+      setIsRescheduleModalOpen(false);
+      setSelectedEvent(null);
+      setRescheduleData({ start_date: "", end_date: "" });
+      fetchEvents();
+    } catch (error) {
+      console.error("Error rescheduling event:", error);
+      showAlert("error", "Failed to reschedule event");
+    }
   };
 
   const clearFilters = () => {
@@ -330,6 +584,16 @@ const EventsViewModern: React.FC<EventsViewModernProps> = ({ userRole }) => {
       minWidth: 150,
       format: (value: any) => new Date(value).toLocaleDateString(),
     },
+    {
+      id: "lastEditedByAdmin",
+      label: "Last Edited By",
+      minWidth: 180,
+      format: (value: any) => (
+        <Typography variant="body2" color="text.secondary">
+          {value?.email || "System"}
+        </Typography>
+      ),
+    },
   ];
 
   const handleStartEvent = async (event: Event) => {
@@ -368,26 +632,8 @@ const EventsViewModern: React.FC<EventsViewModernProps> = ({ userRole }) => {
     }
   };
 
-  const handleScheduleEvent = async (event: Event) => {
-    try {
-      // Reset event to future status by setting start date to tomorrow
-      const tomorrow = new Date();
-      tomorrow.setDate(tomorrow.getDate() + 1);
-      const updatedEvent = {
-        ...event,
-        start_date: tomorrow.toISOString(),
-        end_date: new Date(
-          tomorrow.getTime() + 24 * 60 * 60 * 1000
-        ).toISOString(), // 1 day duration
-      };
-
-      await eventService.update(event.id, updatedEvent);
-      showAlert("success", `Event "${event.name}" has been rescheduled`);
-      fetchEvents();
-    } catch (error) {
-      console.error("Error rescheduling event:", error);
-      showAlert("error", "Failed to reschedule event");
-    }
+  const handleScheduleEvent = (event: Event) => {
+    handleReschedule(event);
   };
 
   return (
@@ -438,16 +684,6 @@ const EventsViewModern: React.FC<EventsViewModernProps> = ({ userRole }) => {
             </Button>
           )}
         </Box>
-        {/* Alert */}
-        {alert && (
-          <Alert
-            severity={alert.type}
-            sx={{ mb: 2 }}
-            onClose={() => setAlert(null)}
-          >
-            {alert.message}
-          </Alert>
-        )}
         {/* Filters */}
         <Card
           elevation={0}
@@ -645,25 +881,144 @@ const EventsViewModern: React.FC<EventsViewModernProps> = ({ userRole }) => {
                 />
               </Box>
 
-              <Typography variant="subtitle2" sx={{ mt: 1 }}>
-                Images (Enter URLs, one per line)
-              </Typography>
-              <TextField
-                variant="outlined"
-                fullWidth
-                multiline
-                rows={3}
-                value={formData.images.join("\n")}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    images: e.target.value
-                      .split("\n")
-                      .filter((url) => url.trim()),
-                  })
-                }
-                placeholder="https://example.com/image1.jpg&#10;https://example.com/image2.jpg"
-              />
+              {/* Image Upload Section */}
+              <Box sx={{ mt: 2 }}>
+                <Typography variant="subtitle2" sx={{ mb: 2 }}>
+                  Images
+                </Typography>
+
+                {/* File Upload */}
+                <Box sx={{ mb: 2 }}>
+                  <input
+                    type="file"
+                    multiple
+                    accept="image/*"
+                    onChange={handleImageSelect}
+                    style={{ display: "none" }}
+                    id="image-upload"
+                  />
+                  <label htmlFor="image-upload">
+                    <Button
+                      variant="outlined"
+                      component="span"
+                      fullWidth
+                      sx={{ mb: 1 }}
+                    >
+                      Select Images (Max 5, 1MB each)
+                    </Button>
+                  </label>
+                </Box>
+
+                {/* Image Previews for New Files */}
+                {imagePreviews.length > 0 && (
+                  <Box sx={{ mb: 2 }}>
+                    <Typography variant="body2" sx={{ mb: 1 }}>
+                      New Images ({imagePreviews.length}):
+                    </Typography>
+                    <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
+                      {imagePreviews.map((preview, index) => (
+                        <Box
+                          key={index}
+                          sx={{
+                            position: "relative",
+                            width: 80,
+                            height: 80,
+                            border: "1px solid #ddd",
+                            borderRadius: 1,
+                          }}
+                        >
+                          <img
+                            src={preview}
+                            alt={`Preview ${index + 1}`}
+                            style={{
+                              width: "100%",
+                              height: "100%",
+                              objectFit: "cover",
+                              borderRadius: 4,
+                            }}
+                          />
+                          <Button
+                            onClick={() => removeImagePreview(index)}
+                            sx={{
+                              position: "absolute",
+                              top: -8,
+                              right: -8,
+                              minWidth: 20,
+                              width: 20,
+                              height: 20,
+                              borderRadius: "50%",
+                              backgroundColor: "error.main",
+                              color: "white",
+                              "&:hover": {
+                                backgroundColor: "error.dark",
+                              },
+                            }}
+                          >
+                            ×
+                          </Button>
+                        </Box>
+                      ))}
+                    </Box>
+                  </Box>
+                )}
+
+                {/* Existing Images */}
+                {formData.images.length > 0 && (
+                  <Box sx={{ mb: 2 }}>
+                    <Typography variant="body2" sx={{ mb: 1 }}>
+                      Current Images ({formData.images.length}):
+                    </Typography>
+                    <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
+                      {formData.images.map((imageUrl, index) => (
+                        <Box
+                          key={index}
+                          sx={{
+                            position: "relative",
+                            width: 80,
+                            height: 80,
+                            border: "1px solid #ddd",
+                            borderRadius: 1,
+                          }}
+                        >
+                          <img
+                            src={imageUrl}
+                            alt={`Event image ${index + 1}`}
+                            style={{
+                              width: "100%",
+                              height: "100%",
+                              objectFit: "cover",
+                              borderRadius: 4,
+                            }}
+                            onError={(e) => {
+                              const target = e.target as HTMLImageElement;
+                              target.src = "/placeholder-image.png";
+                            }}
+                          />
+                          <Button
+                            onClick={() => removeExistingImage(imageUrl, index)}
+                            sx={{
+                              position: "absolute",
+                              top: -8,
+                              right: -8,
+                              minWidth: 20,
+                              width: 20,
+                              height: 20,
+                              borderRadius: "50%",
+                              backgroundColor: "error.main",
+                              color: "white",
+                              "&:hover": {
+                                backgroundColor: "error.dark",
+                              },
+                            }}
+                          >
+                            ×
+                          </Button>
+                        </Box>
+                      ))}
+                    </Box>
+                  </Box>
+                )}
+              </Box>
             </Box>
           </DialogContent>
           <DialogActions>
@@ -972,6 +1327,92 @@ const EventsViewModern: React.FC<EventsViewModernProps> = ({ userRole }) => {
             </>
           )}
         </Dialog>
+        {/* Reschedule Dialog */}
+        <Dialog
+          open={isRescheduleModalOpen}
+          onClose={() => setIsRescheduleModalOpen(false)}
+          maxWidth="sm"
+          fullWidth
+        >
+          <DialogTitle>
+            <Typography variant="h6" fontWeight={600}>
+              Reschedule Event: {selectedEvent?.name}
+            </Typography>
+          </DialogTitle>
+          <DialogContent>
+            <Box sx={{ mt: 2 }}>
+              <Grid container spacing={3}>
+                <Grid item xs={6}>
+                  <TextField
+                    fullWidth
+                    label="Start Date & Time"
+                    type="datetime-local"
+                    value={rescheduleData.start_date}
+                    onChange={(e) =>
+                      setRescheduleData((prev) => ({
+                        ...prev,
+                        start_date: e.target.value,
+                      }))
+                    }
+                    InputLabelProps={{ shrink: true }}
+                    sx={{ "& .MuiOutlinedInput-root": { borderRadius: 2 } }}
+                  />
+                </Grid>
+                <Grid item xs={6}>
+                  <TextField
+                    fullWidth
+                    label="End Date & Time"
+                    type="datetime-local"
+                    value={rescheduleData.end_date}
+                    onChange={(e) =>
+                      setRescheduleData((prev) => ({
+                        ...prev,
+                        end_date: e.target.value,
+                      }))
+                    }
+                    InputLabelProps={{ shrink: true }}
+                    sx={{ "& .MuiOutlinedInput-root": { borderRadius: 2 } }}
+                  />
+                </Grid>
+              </Grid>
+            </Box>
+          </DialogContent>
+          <DialogActions sx={{ px: 3, pb: 3 }}>
+            <Button
+              onClick={() => setIsRescheduleModalOpen(false)}
+              variant="outlined"
+              sx={{ borderRadius: 2 }}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleRescheduleEvent}
+              variant="contained"
+              sx={{
+                borderRadius: 2,
+                px: 3,
+                background: `linear-gradient(135deg, ${theme.palette.primary.main}, ${theme.palette.primary.dark})`,
+              }}
+            >
+              Reschedule
+            </Button>
+          </DialogActions>
+        </Dialog>
+        {/* Snackbar for notifications */}
+        <Snackbar
+          open={snackbar.open}
+          autoHideDuration={5000}
+          onClose={() => setSnackbar({ ...snackbar, open: false })}
+          anchorOrigin={{ vertical: "bottom", horizontal: "left" }}
+        >
+          <Alert
+            onClose={() => setSnackbar({ ...snackbar, open: false })}
+            severity={snackbar.severity}
+            sx={{ width: "100%" }}
+          >
+            {snackbar.message}
+          </Alert>
+        </Snackbar>
       </Paper>
     </motion.div>
   );

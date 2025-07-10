@@ -31,6 +31,8 @@ import {
   VisibilityOff,
   Visibility,
   CheckCircle,
+  Delete as DeleteIcon,
+  PhotoCamera,
 } from "@mui/icons-material";
 import { motion } from "framer-motion";
 import {
@@ -79,7 +81,10 @@ export const ItemsView: React.FC = () => {
     availability: true,
     visibility: true,
     is_favourite: false,
+    images: [] as string[],
   });
+  const [imageFiles, setImageFiles] = useState<File[]>([]);
+  const [imagePreviews, setImagePreviews] = useState<string[]>([]);
 
   useEffect(() => {
     fetchCategories();
@@ -154,6 +159,7 @@ export const ItemsView: React.FC = () => {
       availability: item.availability,
       visibility: item.visibility,
       is_favourite: item.is_favourite,
+      images: item.images || [],
     });
     setEditDialogOpen(true);
   };
@@ -184,21 +190,59 @@ export const ItemsView: React.FC = () => {
 
   const handleSave = async () => {
     try {
+      // Validate form data
+      if (!formData.name.trim()) {
+        showSnackbar("Item name is required", "error");
+        return;
+      }
+
+      if (!formData.categoryId) {
+        showSnackbar("Category is required", "error");
+        return;
+      }
+
+      if (!formData.price || parseFloat(formData.price) <= 0) {
+        showSnackbar("Price must be greater than 0", "error");
+        return;
+      }
+
+      if (
+        !formData.original_price ||
+        parseFloat(formData.original_price) <= 0
+      ) {
+        showSnackbar("Original price must be greater than 0", "error");
+        return;
+      }
+
+      // First upload any new images
+      let uploadedImageUrls: string[] = [];
+      if (imageFiles.length > 0) {
+        uploadedImageUrls = await uploadImages(imageFiles);
+      }
+
+      // Combine existing images with newly uploaded images
+      const allImages = [...formData.images, ...uploadedImageUrls];
+
       const saveData = {
-        name: formData.name,
-        description: formData.description,
+        name: formData.name.trim(),
+        description: formData.description.trim(),
         price: parseFloat(formData.price),
         original_price: parseFloat(formData.original_price),
         categoryId: formData.categoryId,
         availability: formData.availability,
         visibility: formData.visibility,
         is_favourite: formData.is_favourite,
+        images: allImages,
       };
 
       if (addDialogOpen) {
         await itemService.create(saveData);
         showSnackbar("Item created successfully", "success");
       } else if (editDialogOpen && selectedItem) {
+        if (!selectedItem.id) {
+          showSnackbar("Invalid item ID", "error");
+          return;
+        }
         await itemService.update(selectedItem.id, saveData);
         showSnackbar("Item updated successfully", "success");
       }
@@ -209,7 +253,9 @@ export const ItemsView: React.FC = () => {
       fetchItems(); // Refresh the list
     } catch (error) {
       console.error("Error saving item:", error);
-      showSnackbar("Error saving item", "error");
+      const errorMessage =
+        error instanceof Error ? error.message : "Error saving item";
+      showSnackbar(errorMessage, "error");
     }
   };
 
@@ -223,8 +269,11 @@ export const ItemsView: React.FC = () => {
       availability: true,
       visibility: true,
       is_favourite: false,
+      images: [],
     });
     setSelectedItem(null);
+    setImageFiles([]);
+    setImagePreviews([]);
   };
   const columns = [
     {
@@ -237,6 +286,40 @@ export const ItemsView: React.FC = () => {
           <Typography variant="body2" fontWeight={600}>
             {value}
           </Typography>
+        </Box>
+      ),
+    },
+    {
+      id: "images",
+      label: "Image",
+      minWidth: 80,
+      format: (value: any) => (
+        <Box
+          sx={{
+            width: 50,
+            height: 50,
+            borderRadius: 1,
+            overflow: "hidden",
+            border: "1px solid " + theme.palette.divider,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            bgcolor: theme.palette.grey[100],
+          }}
+        >
+          {value && value.length > 0 ? (
+            <img
+              src={value[0]}
+              alt="Item"
+              style={{
+                width: "100%",
+                height: "100%",
+                objectFit: "cover",
+              }}
+            />
+          ) : (
+            <Restaurant sx={{ color: theme.palette.grey[400] }} />
+          )}
         </Box>
       ),
     },
@@ -350,10 +433,16 @@ export const ItemsView: React.FC = () => {
 
   const handleToggleAvailability = async (item: Item) => {
     try {
-      await itemService.update(item.id, {
-        ...item,
+      console.log(
+        "🔄 Toggling availability for item:",
+        item.id,
+        "Current:",
+        item.availability
+      );
+      const updatedData = {
         availability: !item.availability,
-      });
+      };
+      await itemService.update(item.id, updatedData);
       showSnackbar(
         `Item ${
           item.availability ? "marked as unavailable" : "marked as available"
@@ -362,34 +451,46 @@ export const ItemsView: React.FC = () => {
       );
       fetchItems();
     } catch (error) {
-      console.error("Error toggling availability:", error);
+      console.error("❌ Error toggling availability:", error);
       showSnackbar("Error updating item availability", "error");
     }
   };
 
   const handleToggleVisibility = async (item: Item) => {
     try {
-      await itemService.update(item.id, {
-        ...item,
+      console.log(
+        "🔄 Toggling visibility for item:",
+        item.id,
+        "Current:",
+        item.visibility
+      );
+      const updatedData = {
         visibility: !item.visibility,
-      });
+      };
+      await itemService.update(item.id, updatedData);
       showSnackbar(
         `Item ${item.visibility ? "hidden" : "made visible"}`,
         "success"
       );
       fetchItems();
     } catch (error) {
-      console.error("Error toggling visibility:", error);
+      console.error("❌ Error toggling visibility:", error);
       showSnackbar("Error updating item visibility", "error");
     }
   };
 
   const handleToggleFavourite = async (item: Item) => {
     try {
-      await itemService.update(item.id, {
-        ...item,
+      console.log(
+        "🔄 Toggling favourite for item:",
+        item.id,
+        "Current:",
+        item.is_favourite
+      );
+      const updatedData = {
         is_favourite: !item.is_favourite,
-      });
+      };
+      await itemService.update(item.id, updatedData);
       showSnackbar(
         `Item ${
           item.is_favourite ? "removed from favourites" : "added to favourites"
@@ -398,8 +499,182 @@ export const ItemsView: React.FC = () => {
       );
       fetchItems();
     } catch (error) {
-      console.error("Error toggling favourite:", error);
+      console.error("❌ Error toggling favourite:", error);
       showSnackbar("Error updating item favourite status", "error");
+    }
+  };
+
+  // Image handling functions
+  const handleImageSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (!files) return;
+
+    const newFiles = Array.from(files);
+
+    // Validate total number of images (existing + new)
+    if (imageFiles.length + newFiles.length > 5) {
+      setSnackbar({
+        open: true,
+        message: "Maximum 5 images allowed",
+        severity: "error",
+      });
+      return;
+    }
+
+    // Validate each file
+    const validFiles: File[] = [];
+    const errors: string[] = [];
+
+    for (const file of newFiles) {
+      // Check file size (1MB max)
+      if (file.size > 1024 * 1024) {
+        errors.push(`${file.name} exceeds 1MB limit`);
+        continue;
+      }
+
+      // Check file type
+      const allowedTypes = [
+        "image/jpeg",
+        "image/jpg",
+        "image/png",
+        "image/gif",
+        "image/webp",
+      ];
+      if (!allowedTypes.includes(file.type)) {
+        errors.push(
+          `${file.name} is not a valid image type (allowed: JPEG, PNG, GIF, WebP)`
+        );
+        continue;
+      }
+
+      validFiles.push(file);
+    }
+
+    // Show validation errors if any
+    if (errors.length > 0) {
+      setSnackbar({
+        open: true,
+        message: errors.join(", "),
+        severity: "error",
+      });
+    }
+
+    // Process valid files
+    if (validFiles.length > 0) {
+      const newPreviews: string[] = [];
+      let processedCount = 0;
+
+      validFiles.forEach((file) => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          newPreviews.push(e.target?.result as string);
+          processedCount++;
+
+          if (processedCount === validFiles.length) {
+            setImageFiles((prev) => [...prev, ...validFiles]);
+            setImagePreviews((prev) => [...prev, ...newPreviews]);
+
+            if (validFiles.length > 0) {
+              setSnackbar({
+                open: true,
+                message: `${validFiles.length} image(s) selected successfully`,
+                severity: "success",
+              });
+            }
+          }
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+
+    // Clear the input
+    event.target.value = "";
+  };
+
+  const uploadImages = async (files: File[]): Promise<string[]> => {
+    if (files.length === 0) return [];
+
+    // Validate number of files
+    if (files.length > 5) {
+      throw new Error("Maximum 5 images allowed");
+    }
+
+    // Validate each file
+    for (const file of files) {
+      // Check file size (1MB max)
+      if (file.size > 1024 * 1024) {
+        throw new Error(`File ${file.name} exceeds 1MB limit`);
+      }
+
+      // Check file type
+      const allowedTypes = [
+        "image/jpeg",
+        "image/jpg",
+        "image/png",
+        "image/gif",
+        "image/webp",
+      ];
+      if (!allowedTypes.includes(file.type)) {
+        throw new Error(`File ${file.name} is not a valid image type`);
+      }
+    }
+
+    try {
+      const formData = new FormData();
+      files.forEach((file) => {
+        formData.append("images", file);
+      });
+
+      const response = await fetch(
+        "http://localhost:5000/items/upload-images",
+        {
+          method: "POST",
+          credentials: "include",
+          body: formData,
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to upload images");
+      }
+
+      const result = await response.json();
+
+      // Use signed URLs if available for better security
+      return result.signedUrls || result.imageUrls;
+    } catch (error) {
+      console.error("Error uploading images:", error);
+      throw error;
+    }
+  };
+
+  const removeImagePreview = (index: number) => {
+    setImageFiles((prev) => prev.filter((_, i) => i !== index));
+    setImagePreviews((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const removeExistingImage = async (imageUrl: string, index: number) => {
+    try {
+      const encodedUrl = encodeURIComponent(imageUrl);
+      const response = await fetch(
+        `http://localhost:5000/items/images/${encodedUrl}`,
+        {
+          method: "DELETE",
+          credentials: "include",
+        }
+      );
+
+      if (response.ok) {
+        setFormData((prev) => ({
+          ...prev,
+          images: prev.images.filter((_, i) => i !== index),
+        }));
+        showSnackbar("Image removed successfully", "success");
+      }
+    } catch (error) {
+      console.error("Error removing image:", error);
+      showSnackbar("Error removing image", "error");
     }
   };
 
@@ -693,6 +968,120 @@ export const ItemsView: React.FC = () => {
                   </Select>
                 </FormControl>
               </Grid>
+              <Grid item xs={12}>
+                <Typography variant="subtitle1" fontWeight={500} gutterBottom>
+                  Images
+                </Typography>
+                <input
+                  accept="image/*"
+                  id="image-upload"
+                  type="file"
+                  multiple
+                  style={{ display: "none" }}
+                  onChange={handleImageSelect}
+                />
+                <label htmlFor="image-upload">
+                  <Button
+                    variant="outlined"
+                    component="span"
+                    startIcon={<PhotoCamera />}
+                    sx={{
+                      borderRadius: 2,
+                      mr: 2,
+                      py: 1.5,
+                      width: "auto",
+                      color: theme.palette.primary.main,
+                      borderColor: theme.palette.primary.main,
+                    }}
+                  >
+                    Upload Images
+                  </Button>
+                </label>
+                <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
+                  {imagePreviews.map((preview, index) => (
+                    <Box
+                      key={index}
+                      sx={{
+                        position: "relative",
+                        width: 100,
+                        height: 100,
+                        borderRadius: 1,
+                        overflow: "hidden",
+                        border: "1px solid " + theme.palette.divider,
+                      }}
+                    >
+                      <img
+                        src={preview}
+                        alt={`Preview ${index + 1}`}
+                        style={{
+                          width: "100%",
+                          height: "100%",
+                          objectFit: "cover",
+                        }}
+                      />
+                      <IconButton
+                        size="small"
+                        sx={{
+                          position: "absolute",
+                          top: 4,
+                          right: 4,
+                          bgcolor: "white",
+                          "&:hover": {
+                            bgcolor: theme.palette.error.main + " !important",
+                            color: "white",
+                          },
+                        }}
+                        onClick={() => removeImagePreview(index)}
+                      >
+                        <DeleteIcon fontSize="small" />
+                      </IconButton>
+                    </Box>
+                  ))}
+                </Box>
+                {editDialogOpen && (
+                  <Box sx={{ mt: 2 }}>
+                    {formData.images.map((image, index) => (
+                      <Box
+                        key={index}
+                        sx={{
+                          position: "relative",
+                          width: 100,
+                          height: 100,
+                          borderRadius: 1,
+                          overflow: "hidden",
+                          border: "1px solid " + theme.palette.divider,
+                        }}
+                      >
+                        <img
+                          src={image}
+                          alt={`Image ${index + 1}`}
+                          style={{
+                            width: "100%",
+                            height: "100%",
+                            objectFit: "cover",
+                          }}
+                        />
+                        <IconButton
+                          size="small"
+                          sx={{
+                            position: "absolute",
+                            top: 4,
+                            right: 4,
+                            bgcolor: "white",
+                            "&:hover": {
+                              bgcolor: theme.palette.error.main + " !important",
+                              color: "white",
+                            },
+                          }}
+                          onClick={() => removeExistingImage(image, index)}
+                        >
+                          <DeleteIcon fontSize="small" />
+                        </IconButton>
+                      </Box>
+                    ))}
+                  </Box>
+                )}
+              </Grid>
             </Grid>
           </DialogContent>
           <DialogActions>
@@ -752,6 +1141,18 @@ export const ItemsView: React.FC = () => {
                 <Typography variant="body1">
                   <strong>Favourite:</strong>{" "}
                   {selectedItem.is_favourite ? "Yes" : "No"}
+                </Typography>
+                <Typography variant="body1" sx={{ mt: 2 }}>
+                  <strong>Last Edited By:</strong>{" "}
+                  {selectedItem.lastEditedByAdmin?.email || "System"}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  <strong>Created:</strong>{" "}
+                  {new Date(selectedItem.created_at).toLocaleString()}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  <strong>Last Updated:</strong>{" "}
+                  {new Date(selectedItem.updated_at).toLocaleString()}
                 </Typography>
               </Box>
             )}

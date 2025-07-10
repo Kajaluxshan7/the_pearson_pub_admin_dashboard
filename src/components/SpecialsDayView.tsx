@@ -74,16 +74,12 @@ export const SpecialsDayView: React.FC = () => {
 
   useEffect(() => {
     fetchSpecialsDays();
-  }, [page, pageSize, searchQuery]);
+  }, [page, pageSize]);
 
   const fetchSpecialsDays = async () => {
     try {
       setLoading(true);
-      const response = await specialsDayService.getAll(
-        page + 1,
-        pageSize,
-        searchQuery
-      );
+      const response = await specialsDayService.getAll(page + 1, pageSize);
       setSpecialsDays(response.data);
       setTotal(response.total);
     } catch (error) {
@@ -245,32 +241,34 @@ export const SpecialsDayView: React.FC = () => {
           </Button>
         </Box>
 
-        {/* Search */}
-        <Paper sx={{ p: 3, mb: 3, borderRadius: 3 }}>
-          <Grid container spacing={3} alignItems="center">
-            <Grid item xs={12} md={6}>
-              <TextField
-                fullWidth
-                variant="outlined"
-                placeholder="Search specials days..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <Search color="action" />
-                    </InputAdornment>
-                  ),
-                }}
-                sx={{
-                  "& .MuiOutlinedInput-root": {
-                    borderRadius: 2,
-                  },
-                }}
-              />
+        {/* Search - Hidden as per requirements */}
+        {false && (
+          <Paper sx={{ p: 3, mb: 3, borderRadius: 3 }}>
+            <Grid container spacing={3} alignItems="center">
+              <Grid item xs={12} md={6}>
+                <TextField
+                  fullWidth
+                  variant="outlined"
+                  placeholder="Search specials days..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <Search color="action" />
+                      </InputAdornment>
+                    ),
+                  }}
+                  sx={{
+                    "& .MuiOutlinedInput-root": {
+                      borderRadius: 2,
+                    },
+                  }}
+                />
+              </Grid>
             </Grid>
-          </Grid>
-        </Paper>
+          </Paper>
+        )}
 
         {/* Data Table */}
         <ModernTable

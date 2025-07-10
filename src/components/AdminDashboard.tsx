@@ -216,7 +216,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       case "item-addons-relations":
         return <ItemAddonsRelationsView />;
       case "specials-days":
-        return <SpecialsDayView />;
+        return userRole === "superadmin" ? <SpecialsDayView /> : null;
       case "specials":
         return <SpecialsView />;
       case "wing-sauces":
@@ -269,13 +269,27 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       </Box>
 
       {/* Navigation */}
-      <Box sx={{ flex: 1, overflow: "hidden", py: 2 }}>
+      <Box
+        sx={{
+          flex: 1,
+          overflowX: "hidden",
+          py: 2,
+          scrollbarWidth: "thin", // for Firefox
+          scrollbarColor: "#d9a419 transparent", // for Firefox
+          backgroundColor: "transparent",
+        }}
+      >
         <List>
-          {sidebarItems.slice(0, -1).map(
-            (
-              item,
-              index // Exclude settings from main nav
-            ) => (
+          {sidebarItems
+            .slice(0, -1)
+            .filter((item) => {
+              // Only show "specials-days" to superadmin
+              if (item.id === "specials-days") {
+                return userProfile?.role === "superadmin";
+              }
+              return true;
+            })
+            .map((item, index) => (
               <motion.div
                 key={item.id}
                 initial={{ opacity: 0, x: -20 }}
@@ -326,8 +340,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   />
                 </ListItem>
               </motion.div>
-            )
-          )}
+            ))}
         </List>
       </Box>
 
@@ -467,6 +480,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           backgroundColor: theme.palette.background.default,
           minHeight: "100vh",
           overflow: "hidden",
+          padding: { xs: 1, sm: 2 }, // Responsive padding
         }}
       >
         {/* App Bar - Inside main content */}
@@ -476,11 +490,13 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           sx={{
             backgroundColor: "transparent",
             backdropFilter: "blur(20px)",
+            border: `0.5px solid ${theme.palette.divider}`,
             borderBottom: `1px solid ${theme.palette.divider}`,
             boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
+            // Responsive padding
           }}
         >
-          <Toolbar sx={{ justifyContent: "space-between", py: 1 }}>
+          <Toolbar sx={{ justifyContent: "space-between" }}>
             {/* Mobile menu button */}
             {isMobile && (
               <IconButton
@@ -501,10 +517,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 color: theme.palette.text.primary,
                 textTransform: "capitalize",
               }}
-            >
-              {sidebarItems.find((item) => item.id === selectedView)?.label ||
-                "Dashboard"}
-            </Typography>
+            ></Typography>
 
             {/* Right side - Theme toggle and Profile */}
             <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>

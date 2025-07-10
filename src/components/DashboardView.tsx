@@ -582,36 +582,36 @@ export const DashboardView: React.FC = () => {
       title: "Total Categories",
       value: stats.categories,
       icon: <Category sx={{ fontSize: 32 }} />,
-      color: "#3b82f6",
-      change: loading ? undefined : "+2 this month",
+      color: theme.palette.primary.main,
+      // change: loading ? undefined : "+2 this month",
     },
     {
       title: "Menu Items",
       value: stats.items,
       icon: <Restaurant sx={{ fontSize: 32 }} />,
-      color: "#10b981",
-      change: loading ? undefined : "+12 this week",
+      color: theme.palette.secondary.main,
+      // change: loading ? undefined : "+12 this week",
     },
-    {
-      title: "Add-ons",
-      value: stats.addons,
-      icon: <Add sx={{ fontSize: 32 }} />,
-      color: "#f59e0b",
-      change: loading ? undefined : "+5 this month",
-    },
+    // {
+    //   title: "Add-ons",
+    //   value: stats.addons,
+    //   icon: <Add sx={{ fontSize: 32 }} />,
+    //   color: theme.palette.primary.main,
+    //   change: loading ? undefined : "+5 this month",
+    // },
     {
       title: "Events",
       value: stats.events,
       icon: <Event sx={{ fontSize: 32 }} />,
-      color: "#8b5cf6",
-      change: loading ? undefined : "2 upcoming",
+      color: theme.palette.primary.main,
+      // change: loading ? undefined : "2 upcoming",
     },
     {
       title: "Admins",
       value: stats.admins,
       icon: <People sx={{ fontSize: 32 }} />,
-      color: "#ef4444",
-      change: loading ? undefined : "All active",
+      color: theme.palette.secondary.main,
+      // change: loading ? undefined : "All active",
     },
   ];
 
@@ -668,18 +668,19 @@ export const DashboardView: React.FC = () => {
       {/* Stats Cards */}
       <Grid container spacing={3} sx={{ mb: 4 }}>
         {statsData.map((stat, index) => (
-          <Grid item xs={12} sm={6} lg={2.4} key={stat.title}>
+          <Grid item xs={12} sm={6} md={3} key={stat.title}>
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.1, duration: 0.5 }}
+              style={{ height: "100%" }}
             >
               <StatCard
                 title={stat.title}
                 value={stat.value}
                 icon={stat.icon}
                 color={stat.color}
-                change={stat.change}
+                // change={stat.change}
                 loading={loading}
               />
             </motion.div>
@@ -695,12 +696,15 @@ export const DashboardView: React.FC = () => {
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.3, duration: 0.5 }}
+            style={{ height: "100%" }}
           >
             <Paper
               sx={{
                 p: 3,
                 borderRadius: 3,
-                height: "fit-content",
+                height: 400,
+                display: "flex",
+                flexDirection: "column",
                 background: theme.palette.background.paper,
               }}
             >
@@ -764,6 +768,7 @@ export const DashboardView: React.FC = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.4, duration: 0.5 }}
+            style={{ height: "100%" }}
           >
             <Paper
               sx={{
@@ -875,6 +880,7 @@ export const DashboardView: React.FC = () => {
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.5, duration: 0.5 }}
+            style={{ height: "100%" }}
           >
             <Paper
               sx={{
