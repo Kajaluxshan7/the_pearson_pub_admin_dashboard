@@ -8,5 +8,7 @@ export default defineConfig({
   server: {
     host: "::",
     port: 3002,
+    strictPort: true,
+    // allowedHosts: ["swift-supply.xyz"],
   },
 });
