@@ -10,4 +10,4 @@ COPY . .
 
 EXPOSE 3002
 
-CMD ["npm", "run", "dev"]
+CMD ["npm", "run", "dev", "--", "--port", "3002", "--host", "0.0.0.0"]
