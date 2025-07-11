@@ -1,15 +1,13 @@
-FROM node:22.16.0-alpine
+FROM node:22.16.0-bullseye-slim
 
 WORKDIR /app
 
-COPY package.json package-lock.json* pnpm-lock.yaml* ./
+COPY package.json ./
 
-RUN npm install -g pnpm
-
-RUN pnpm install
+RUN npm install
 
 COPY . .
 
 EXPOSE 3002
 
-CMD ["pnpm", "run", "dev"]
+CMD ["npm", "run", "dev"]
