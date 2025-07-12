@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const API_BASE_URL = "http://localhost:5000"; // NestJS backend URL
+const API_BASE_URL = "http://15.223.253.194:5000/"; // NestJS backend URL
 
 // Create axios instance with common config
 const api = axios.create({
