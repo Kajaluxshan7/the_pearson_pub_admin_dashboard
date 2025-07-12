@@ -29,14 +29,17 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
     setError("");
 
     try {
-      const response = await fetch("http://localhost:5000/auth/login", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        credentials: "include", // Include cookies in the request
-        body: JSON.stringify({ email, password }),
-      });
+      const response = await fetch(
+        "http://15.223.253.194:5000/auth/login",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          credentials: "include", // Include cookies in the request
+          body: JSON.stringify({ email, password }),
+        }
+      );
 
       const data = await response.json();
 
