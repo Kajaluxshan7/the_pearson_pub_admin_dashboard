@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   Box,
   Typography,
@@ -54,8 +54,11 @@ export const AdminsView: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(0);
-  const [pageSize, setPageSize] = useState(10);
+  const [pageSize, setPageSize] = useState(5);
   const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
+  const [allAdmins, setAllAdmins] = useState<Admin[]>([]);
+  const [filteredAdmins, setFilteredAdmins] = useState<Admin[]>([]);
   const [roleFilter, setRoleFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
 
@@ -83,7 +86,109 @@ export const AdminsView: React.FC = () => {
   useEffect(() => {
     fetchCurrentUser();
     fetchAdmins();
-  }, [page, pageSize, searchQuery, roleFilter, statusFilter]);
+  }, [roleFilter, statusFilter]);
+
+  // Debounce search query
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery);
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  // Enhanced search algorithm
+  const performAdvancedSearch = useCallback(
+    (admins: Admin[], query: string) => {
+      if (!query.trim()) return admins;
+
+      const searchTerms = query.toLowerCase().trim().split(/\s+/);
+
+      return admins.filter((admin) => {
+        const searchableText = [
+          admin.first_name || "",
+          admin.email || "",
+          admin.role || "",
+          admin.phone || "",
+          admin.address || "",
+        ]
+          .join(" ")
+          .toLowerCase();
+
+        // Check if all search terms are found
+        return searchTerms.every((term) => {
+          // Exact match
+          if (searchableText.includes(term)) return true;
+
+          // Fuzzy match for typos (simple Levenshtein distance approximation)
+          const words = searchableText.split(/\s+/);
+          return words.some((word) => {
+            if (word.length < 3 || term.length < 3) return false;
+
+            // Check if term is a substring of word or vice versa
+            if (word.includes(term) || term.includes(word)) return true;
+
+            // Simple fuzzy matching: allow 1 character difference for words > 4 chars
+            if (word.length > 4 && term.length > 4) {
+              const maxDist = Math.floor(
+                Math.max(word.length, term.length) * 0.2
+              );
+              return levenshteinDistance(word, term) <= maxDist;
+            }
+
+            return false;
+          });
+        });
+      });
+    },
+    []
+  );
+
+  // Simple Levenshtein distance implementation
+  const levenshteinDistance = (str1: string, str2: string): number => {
+    const matrix = Array(str2.length + 1)
+      .fill(null)
+      .map(() => Array(str1.length + 1).fill(null));
+
+    for (let i = 0; i <= str1.length; i++) matrix[0][i] = i;
+    for (let j = 0; j <= str2.length; j++) matrix[j][0] = j;
+
+    for (let j = 1; j <= str2.length; j++) {
+      for (let i = 1; i <= str1.length; i++) {
+        const substitutionCost = str1[i - 1] === str2[j - 1] ? 0 : 1;
+        matrix[j][i] = Math.min(
+          matrix[j][i - 1] + 1, // deletion
+          matrix[j - 1][i] + 1, // insertion
+          matrix[j - 1][i - 1] + substitutionCost // substitution
+        );
+      }
+    }
+
+    return matrix[str2.length][str1.length];
+  };
+
+  // Handle pagination of filtered results
+  useEffect(() => {
+    if (filteredAdmins.length > 0) {
+      const startIndex = page * pageSize;
+      const endIndex = startIndex + pageSize;
+      const paginatedAdmins = filteredAdmins.slice(startIndex, endIndex);
+      setAdmins(paginatedAdmins);
+      setTotal(filteredAdmins.length);
+    }
+  }, [filteredAdmins, page, pageSize]);
+
+  // Re-apply search when search query changes
+  useEffect(() => {
+    if (allAdmins.length > 0) {
+      const searchFiltered = performAdvancedSearch(
+        allAdmins,
+        debouncedSearchQuery
+      );
+      setFilteredAdmins(searchFiltered);
+      setPage(0); // Reset to first page when search changes
+    }
+  }, [debouncedSearchQuery, allAdmins, performAdvancedSearch]);
   const fetchCurrentUser = async () => {
     try {
       setUserLoading(true);
@@ -100,32 +205,48 @@ export const AdminsView: React.FC = () => {
     try {
       setLoading(true);
 
-      // Build query parameters for backend filtering
+      // Build query parameters for backend filtering (excluding search)
       const params: any = {
-        page: page + 1,
-        limit: pageSize,
+        page: 1, // Get all data for client-side search
+        limit: 1000, // Large limit to get all admins
       };
 
-      if (searchQuery.trim()) {
-        params.search = searchQuery.trim();
-      }
-
+      // Apply role filter on backend
       if (roleFilter !== "all") {
         params.role = roleFilter;
       }
 
+      // Apply status filter on backend
       if (statusFilter !== "all") {
         params.status = statusFilter === "active";
       }
+
       const response: PaginatedResponse<Admin> =
         await adminService.getAllWithFilters(params);
 
-      setAdmins(response.data || []);
-      setTotal(response.total || 0);
+      const allAdminsData = response.data || [];
+      setAllAdmins(allAdminsData);
+
+      // Apply advanced search algorithm on client-side
+      const searchFiltered = performAdvancedSearch(
+        allAdminsData,
+        debouncedSearchQuery
+      );
+      setFilteredAdmins(searchFiltered);
+
+      // Apply pagination to filtered results
+      const startIndex = page * pageSize;
+      const endIndex = startIndex + pageSize;
+      const paginatedAdmins = searchFiltered.slice(startIndex, endIndex);
+
+      setAdmins(paginatedAdmins);
+      setTotal(searchFiltered.length);
     } catch (error) {
       console.error("Error fetching admins:", error);
       showSnackbar("Error fetching admins", "error");
       setAdmins([]);
+      setAllAdmins([]);
+      setFilteredAdmins([]);
       setTotal(0);
     } finally {
       setLoading(false);

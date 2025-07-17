@@ -59,7 +59,7 @@ const OperationHoursViewModern: React.FC<OperationHoursViewModernProps> = ({
   const [totalCount, setTotalCount] = useState(0);
   const [paginationModel, setPaginationModel] = useState({
     page: 0,
-    pageSize: 10,
+    pageSize: 5,
   });
 
   // Filters and search
@@ -329,16 +329,6 @@ const OperationHoursViewModern: React.FC<OperationHoursViewModernProps> = ({
       label: "Last Updated",
       minWidth: 150,
       format: (value: any) => new Date(value).toLocaleDateString(),
-    },
-    {
-      id: "lastEditedByAdmin",
-      label: "Last Edited By",
-      minWidth: 180,
-      format: (value: any) => (
-        <Typography variant="body2" color="text.secondary">
-          {value?.email || "System"}
-        </Typography>
-      ),
     },
   ];
 
@@ -781,6 +771,21 @@ const OperationHoursViewModern: React.FC<OperationHoursViewModernProps> = ({
                         hour: "2-digit",
                         minute: "2-digit",
                       })}
+                    </Typography>
+                  </Box>
+
+                  <Box sx={{ mt: 2 }}>
+                    <Typography
+                      variant="body2"
+                      color="text.secondary"
+                      fontWeight={500}
+                      mb={1}
+                    >
+                      Last Edited By
+                    </Typography>
+                    <Typography variant="body1" fontWeight={500}>
+                      {selectedOperationHour.lastEditedByAdmin?.email ||
+                        "System"}
                     </Typography>
                   </Box>
                 </Paper>

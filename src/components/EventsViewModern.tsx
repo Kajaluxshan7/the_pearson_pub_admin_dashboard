@@ -45,7 +45,7 @@ const EventsViewModern: React.FC<EventsViewModernProps> = ({ userRole }) => {
   const [totalCount, setTotalCount] = useState(0);
   const [paginationModel, setPaginationModel] = useState({
     page: 0,
-    pageSize: 10,
+    pageSize: 5,
   });
 
   // Filters and search
@@ -332,29 +332,9 @@ const EventsViewModern: React.FC<EventsViewModernProps> = ({ userRole }) => {
     }
 
     try {
-      const formData = new FormData();
-      files.forEach((file) => {
-        formData.append("images", file);
-      });
-
-      const response = await fetch(
-        "http://localhost:5000/events/upload-images",
-        {
-          method: "POST",
-          credentials: "include",
-          body: formData,
-        }
-      );
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Failed to upload images");
-      }
-
-      const result = await response.json();
-
+      const result = await eventService.uploadImages(files);
       // Use signed URLs if available for better security
-      return result.signedUrls || result.imageUrls;
+      return result.signedUrls || result.imageUrls || [];
     } catch (error) {
       console.error("Error uploading images:", error);
       throw error;
@@ -368,24 +348,12 @@ const EventsViewModern: React.FC<EventsViewModernProps> = ({ userRole }) => {
 
   const removeExistingImage = async (imageUrl: string, index: number) => {
     try {
-      const encodedUrl = encodeURIComponent(imageUrl);
-      const response = await fetch(
-        `http://localhost:5000/events/images/${encodedUrl}`,
-        {
-          method: "DELETE",
-          credentials: "include",
-        }
-      );
-
-      if (response.ok) {
-        setFormData((prev) => ({
-          ...prev,
-          images: prev.images.filter((_, i) => i !== index),
-        }));
-        showAlert("success", "Image removed successfully");
-      } else {
-        showAlert("error", "Failed to remove image");
-      }
+      await eventService.deleteImage(imageUrl);
+      setFormData((prev) => ({
+        ...prev,
+        images: prev.images.filter((_, i) => i !== index),
+      }));
+      showAlert("success", "Image removed successfully");
     } catch (error) {
       console.error("Error removing image:", error);
       showAlert("error", "Failed to remove image");
@@ -583,16 +551,6 @@ const EventsViewModern: React.FC<EventsViewModernProps> = ({ userRole }) => {
       label: "Created",
       minWidth: 150,
       format: (value: any) => new Date(value).toLocaleDateString(),
-    },
-    {
-      id: "lastEditedByAdmin",
-      label: "Last Edited By",
-      minWidth: 180,
-      format: (value: any) => (
-        <Typography variant="body2" color="text.secondary">
-          {value?.email || "System"}
-        </Typography>
-      ),
     },
   ];
 
@@ -1304,6 +1262,20 @@ const EventsViewModern: React.FC<EventsViewModernProps> = ({ userRole }) => {
                             hour: "2-digit",
                             minute: "2-digit",
                           })}
+                        </Typography>
+                      </Box>
+
+                      <Box sx={{ mt: 2 }}>
+                        <Typography
+                          variant="body2"
+                          color="text.secondary"
+                          fontWeight={500}
+                          mb={1}
+                        >
+                          Last Edited By
+                        </Typography>
+                        <Typography variant="body1" fontWeight={500}>
+                          {selectedEvent.lastEditedByAdmin?.email || "System"}
                         </Typography>
                       </Box>
                     </Paper>

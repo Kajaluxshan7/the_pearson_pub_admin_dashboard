@@ -31,9 +31,7 @@ import {
 import { motion } from "framer-motion";
 import {
   addonService,
-  itemService,
   type Addon,
-  type Item,
   type PaginatedResponse,
 } from "../services/api";
 import { ModernTable } from "./ModernTables";
@@ -46,7 +44,6 @@ interface AddonsViewModernProps {
 export const AddonsViewModern: React.FC<AddonsViewModernProps> = () => {
   const theme = useTheme();
   const [addons, setAddons] = useState<Addon[]>([]);
-  const [items, setItems] = useState<Item[]>([]);
   const [loading, setLoading] = useState(true);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(0);
@@ -72,68 +69,30 @@ export const AddonsViewModern: React.FC<AddonsViewModernProps> = () => {
     description: "",
     price: "",
     category_type: "",
-    itemId: "",
   });
 
   useEffect(() => {
     fetchAddons();
-    fetchItems();
-  }, [page, pageSize, categoryFilter]);
-
-  // Debounce search query
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      if (page === 0) {
-        fetchAddons();
-      } else {
-        setPage(0); // Reset to first page when searching
-      }
-    }, 500);
-
-    return () => clearTimeout(timer);
-  }, [searchQuery]);
-
-  const fetchItems = async () => {
-    try {
-      const response = await itemService.getAll(1, 100); // Get all items for dropdown
-      const itemsData = Array.isArray(response.data) ? response.data : [];
-      setItems(itemsData);
-    } catch (error) {
-      console.error("Error fetching items:", error);
-    }
-  };
+  }, [page, pageSize, searchQuery, categoryFilter]);
 
   const fetchAddons = async () => {
     try {
       setLoading(true);
       const filters: any = {};
 
-      // Only add filters if they have values
-      if (searchQuery && searchQuery.trim()) {
-        filters.search = searchQuery.trim();
-      }
-      if (categoryFilter && categoryFilter !== "all") {
-        filters.category_type = categoryFilter;
-      }
+      if (searchQuery) filters.search = searchQuery;
+      if (categoryFilter !== "all") filters.category_type = categoryFilter;
 
       const response: PaginatedResponse<Addon> = await addonService.getAll(
         page + 1,
         pageSize,
         filters
       );
-
-      // Ensure we have valid data
-      const addonsData = Array.isArray(response.data) ? response.data : [];
-      const totalCount =
-        typeof response.total === "number" ? response.total : 0;
-
-      setAddons(addonsData);
-      setTotal(totalCount);
+      setAddons(response.data);
+      setTotal(response.total);
     } catch (error) {
       console.error("Error fetching addons:", error);
       showSnackbar("Error fetching addons", "error");
-      setAddons([]);
-      setTotal(0);
     } finally {
       setLoading(false);
     }
@@ -151,9 +110,8 @@ export const AddonsViewModern: React.FC<AddonsViewModernProps> = () => {
     setFormData({
       name: addon.name,
       description: addon.description || "",
-      price: (addon.price || 0).toString(),
+      price: addon.price.toString(),
       category_type: addon.category_type || "",
-      itemId: addon.itemId || "",
     });
     setEditDialogOpen(true);
   };
@@ -195,17 +153,11 @@ export const AddonsViewModern: React.FC<AddonsViewModernProps> = () => {
         return;
       }
 
-      if (!formData.itemId) {
-        showSnackbar("Item selection is required", "error");
-        return;
-      }
-
       const addonData = {
         name: formData.name.trim(),
         description: formData.description.trim(),
         price: parseFloat(formData.price) || 0,
         category_type: formData.category_type,
-        itemId: formData.itemId,
       };
 
       if (selectedAddon) {
@@ -234,7 +186,6 @@ export const AddonsViewModern: React.FC<AddonsViewModernProps> = () => {
       description: "",
       price: "",
       category_type: "",
-      itemId: "",
     });
     setSelectedAddon(null);
   };
@@ -284,18 +235,14 @@ export const AddonsViewModern: React.FC<AddonsViewModernProps> = () => {
       id: "price",
       label: "Price",
       minWidth: 100,
-      format: (value: any) => {
-        const price =
-          typeof value === "number" ? value : parseFloat(value) || 0;
-        return (
-          <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-            <AttachMoney sx={{ fontSize: 16, color: "success.main" }} />
-            <Typography variant="body2" fontWeight={600} color="success.main">
-              {price.toFixed(2)}
-            </Typography>
-          </Box>
-        );
-      },
+      format: (value: any) => (
+        <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+          <AttachMoney sx={{ fontSize: 16, color: "success.main" }} />
+          <Typography variant="body2" fontWeight={600} color="success.main">
+            ${value.toFixed(2)}
+          </Typography>
+        </Box>
+      ),
     },
     {
       id: "description",
@@ -357,23 +304,18 @@ export const AddonsViewModern: React.FC<AddonsViewModernProps> = () => {
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
     >
-      <Box sx={{ p: { xs: 2, sm: 3 }, maxWidth: "100%", overflowX: "hidden" }}>
+      <Box sx={{ p: 3 }}>
         {/* Header */}
         <Box
           sx={{
             display: "flex",
-            flexDirection: { xs: "column", sm: "row" },
             justifyContent: "space-between",
-            alignItems: { xs: "stretch", sm: "center" },
+            alignItems: "center",
             mb: 3,
-            gap: 2,
           }}
         >
           <Box>
-            <Typography
-              variant="h4"
-              sx={{ fontWeight: 700, mb: 1, color: "text.primary" }}
-            >
+            <Typography variant="h4" sx={{ fontWeight: 700, mb: 1 }}>
               Addons
             </Typography>
             <Typography variant="body1" color="text.secondary">
@@ -393,7 +335,6 @@ export const AddonsViewModern: React.FC<AddonsViewModernProps> = () => {
               py: 1.5,
               fontWeight: 600,
               boxShadow: 2,
-              minWidth: { xs: "100%", sm: "auto" },
               "&:hover": {
                 boxShadow: 4,
               },
@@ -406,15 +347,15 @@ export const AddonsViewModern: React.FC<AddonsViewModernProps> = () => {
         {/* Filters */}
         <Paper
           sx={{
-            p: 2.5,
+            p: 3,
             mb: 3,
             borderRadius: 2,
             border: 1,
             borderColor: "divider",
           }}
         >
-          <Grid container spacing={2} alignItems="center">
-            <Grid item xs={12} md={5}>
+          <Grid container spacing={3} alignItems="center">
+            <Grid item xs={12} md={4}>
               <TextField
                 fullWidth
                 placeholder="Search addons..."
@@ -427,28 +368,18 @@ export const AddonsViewModern: React.FC<AddonsViewModernProps> = () => {
                     </InputAdornment>
                   ),
                 }}
-                sx={{
-                  borderRadius: 2,
-                  "& .MuiOutlinedInput-root": {
-                    borderRadius: 2,
-                  },
-                }}
+                sx={{ borderRadius: 2 }}
               />
             </Grid>
 
-            <Grid item xs={12} md={4}>
+            <Grid item xs={12} md={3}>
               <FormControl fullWidth>
                 <InputLabel>Category Type</InputLabel>
                 <Select
                   value={categoryFilter}
                   onChange={(e) => setCategoryFilter(e.target.value)}
                   label="Category Type"
-                  sx={{
-                    borderRadius: 2,
-                    "& .MuiOutlinedInput-notchedOutline": {
-                      borderRadius: 2,
-                    },
-                  }}
+                  sx={{ borderRadius: 2 }}
                 >
                   <MenuItem value="all">All Types</MenuItem>
                   <MenuItem value="sauce">Sauce</MenuItem>
@@ -462,7 +393,7 @@ export const AddonsViewModern: React.FC<AddonsViewModernProps> = () => {
               </FormControl>
             </Grid>
 
-            <Grid item xs={12} md={3}>
+            <Grid item xs={12} md={6}>
               <Button
                 fullWidth
                 variant="outlined"
@@ -471,13 +402,6 @@ export const AddonsViewModern: React.FC<AddonsViewModernProps> = () => {
                 sx={{
                   borderRadius: 2,
                   py: 1.5,
-                  borderColor: "divider",
-                  color: "text.secondary",
-                  "&:hover": {
-                    borderColor: "primary.main",
-                    backgroundColor: "primary.50",
-                    color: "primary.main",
-                  },
                 }}
               >
                 Clear
@@ -487,40 +411,30 @@ export const AddonsViewModern: React.FC<AddonsViewModernProps> = () => {
         </Paper>
 
         {/* Data Table */}
-        <Box
-          sx={{
-            borderRadius: 2,
-            overflow: "hidden",
-            boxShadow: 1,
-            border: 1,
-            borderColor: "divider",
-          }}
-        >
-          <ModernTable
-            columns={columns}
-            data={addons}
-            loading={loading}
-            total={total}
-            page={page}
-            pageSize={pageSize}
-            onPageChange={setPage}
-            onPageSizeChange={setPageSize}
-            onEdit={handleEdit}
-            onDelete={handleDelete}
-            onView={handleView}
-            customActions={[
-              {
-                id: "toggle-availability",
-                label: "Toggle Availability",
-                icon: <CheckCircle />,
-                onClick: handleToggleAvailability,
-                color: "success",
-              },
-            ]}
-            title="Addons"
-            emptyMessage="No addons found. Try adjusting your search criteria."
-          />
-        </Box>
+        <ModernTable
+          columns={columns}
+          data={addons}
+          loading={loading}
+          total={total}
+          page={page}
+          pageSize={pageSize}
+          onPageChange={setPage}
+          onPageSizeChange={setPageSize}
+          onEdit={handleEdit}
+          onDelete={handleDelete}
+          onView={handleView}
+          customActions={[
+            {
+              id: "toggle-availability",
+              label: "Toggle Availability",
+              icon: <CheckCircle />,
+              onClick: handleToggleAvailability,
+              color: "success",
+            },
+          ]}
+          title="Addons"
+          emptyMessage="No addons found"
+        />
 
         {/* Snackbar */}
         <Snackbar
@@ -597,27 +511,21 @@ export const AddonsViewModern: React.FC<AddonsViewModernProps> = () => {
                 />
               </Grid>
 
-              <Grid item xs={12} md={6}>
-                <FormControl fullWidth required>
-                  <InputLabel>Item</InputLabel>
-                  <Select
-                    value={formData.itemId}
-                    label="Item"
-                    onChange={(e) =>
-                      setFormData({ ...formData, itemId: e.target.value })
-                    }
-                    sx={{ borderRadius: 2 }}
-                  >
-                    {items.map((item) => (
-                      <MenuItem key={item.id} value={item.id}>
-                        {item.name}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
+              <Grid item xs={12}>
+                <TextField
+                  fullWidth
+                  label="Description"
+                  multiline
+                  rows={3}
+                  value={formData.description}
+                  onChange={(e) =>
+                    setFormData({ ...formData, description: e.target.value })
+                  }
+                  sx={{ borderRadius: 2 }}
+                />
               </Grid>
 
-              <Grid item xs={12} md={6}>
+              <Grid item xs={12}>
                 <FormControl fullWidth required>
                   <InputLabel>Category Type</InputLabel>
                   <Select
@@ -640,20 +548,6 @@ export const AddonsViewModern: React.FC<AddonsViewModernProps> = () => {
                     <MenuItem value="topping">Topping</MenuItem>
                   </Select>
                 </FormControl>
-              </Grid>
-
-              <Grid item xs={12}>
-                <TextField
-                  fullWidth
-                  label="Description"
-                  multiline
-                  rows={3}
-                  value={formData.description}
-                  onChange={(e) =>
-                    setFormData({ ...formData, description: e.target.value })
-                  }
-                  sx={{ borderRadius: 2 }}
-                />
               </Grid>
             </Grid>
           </DialogContent>
@@ -722,11 +616,7 @@ export const AddonsViewModern: React.FC<AddonsViewModernProps> = () => {
                     fontWeight={600}
                     color="success.main"
                   >
-                    $
-                    {(typeof selectedAddon.price === "number"
-                      ? selectedAddon.price
-                      : parseFloat(selectedAddon.price) || 0
-                    ).toFixed(2)}
+                    ${selectedAddon.price.toFixed(2)}
                   </Typography>
                 </Grid>
 

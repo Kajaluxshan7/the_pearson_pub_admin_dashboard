@@ -275,7 +275,14 @@ export const ModernTable: React.FC<ModernTableProps> = ({
   return (
     <Paper
       elevation={0}
-      sx={{ border: 1, borderColor: "divider", borderRadius: 2 }}
+      sx={{
+        border: 1,
+        borderColor: "divider",
+        borderRadius: 2,
+        height: "100%",
+        display: "flex",
+        flexDirection: "column",
+      }}
     >
       {title && (
         <Box sx={{ p: 3, borderBottom: 1, borderColor: "divider" }}>
@@ -285,94 +292,122 @@ export const ModernTable: React.FC<ModernTableProps> = ({
         </Box>
       )}
 
-      <TableContainer>
-        <Table stickyHeader>
-          <TableHead>
-            <TableRow>
-              {!hideRowNumbers && (
-                <StyledTableCell align="center" style={{ width: 60 }}>
-                  No.
-                </StyledTableCell>
-              )}
-              {columns.map((column) => (
-                <StyledTableCell
-                  key={column.id}
-                  align={column.align}
-                  style={{ minWidth: column.minWidth }}
-                >
-                  {column.label}
-                </StyledTableCell>
-              ))}
-              {showActions && (
-                <StyledTableCell align="center" style={{ width: 60 }}>
-                  Actions
-                </StyledTableCell>
-              )}
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {loading ? (
-              renderLoadingRows()
-            ) : data.length === 0 ? (
+      <Box sx={{ flex: 1, display: "flex", flexDirection: "column" }}>
+        <TableContainer
+          sx={{
+            flex: 1,
+            maxHeight: 400,
+            minHeight: 200,
+            overflow: "auto",
+            "&::-webkit-scrollbar": {
+              width: "8px",
+              height: "8px",
+            },
+            "&::-webkit-scrollbar-track": {
+              backgroundColor: theme.palette.grey[100],
+              borderRadius: "4px",
+            },
+            "&::-webkit-scrollbar-thumb": {
+              backgroundColor: theme.palette.grey[400],
+              borderRadius: "4px",
+              "&:hover": {
+                backgroundColor: theme.palette.grey[600],
+              },
+            },
+            // Hide horizontal scrollbar to prevent side scrolling
+            overflowX: "auto",
+            overflowY: "auto",
+            scrollbarGutter: "stable",
+          }}
+        >
+          <Table stickyHeader>
+            <TableHead>
               <TableRow>
-                <TableCell
-                  colSpan={
-                    columns.length +
-                    (!hideRowNumbers ? 1 : 0) +
-                    (showActions ? 1 : 0)
-                  }
-                  align="center"
-                  sx={{ py: 8 }}
-                >
-                  <Typography variant="body1" color="text.secondary">
-                    {emptyMessage}
-                  </Typography>
-                </TableCell>
+                {!hideRowNumbers && (
+                  <StyledTableCell align="center" style={{ width: 60 }}>
+                    No.
+                  </StyledTableCell>
+                )}
+                {columns.map((column) => (
+                  <StyledTableCell
+                    key={column.id}
+                    align={column.align}
+                    style={{ minWidth: column.minWidth }}
+                  >
+                    {column.label}
+                  </StyledTableCell>
+                ))}
+                {showActions && (
+                  <StyledTableCell align="center" style={{ width: 60 }}>
+                    Actions
+                  </StyledTableCell>
+                )}
               </TableRow>
-            ) : (
-              data.map((row, index) => (
-                <StyledTableRow key={row.id || index}>
-                  {!hideRowNumbers && (
-                    <TableCell
-                      align="center"
-                      sx={{ width: 60, color: "text.secondary" }}
-                    >
-                      {page * pageSize + index + 1}
-                    </TableCell>
-                  )}
-                  {columns.map((column) => (
-                    <TableCell key={column.id} align={column.align}>
-                      {column.format
-                        ? column.format(row[column.id], row)
-                        : row[column.id]}
-                    </TableCell>
-                  ))}
-                  {showActions && renderActionCell(row)}
-                </StyledTableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
-      </TableContainer>
+            </TableHead>
+            <TableBody>
+              {loading ? (
+                renderLoadingRows()
+              ) : data.length === 0 ? (
+                <TableRow>
+                  <TableCell
+                    colSpan={
+                      columns.length +
+                      (!hideRowNumbers ? 1 : 0) +
+                      (showActions ? 1 : 0)
+                    }
+                    align="center"
+                    sx={{ py: 8 }}
+                  >
+                    <Typography variant="body1" color="text.secondary">
+                      {emptyMessage}
+                    </Typography>
+                  </TableCell>
+                </TableRow>
+              ) : (
+                data.map((row, index) => (
+                  <StyledTableRow key={row.id || index}>
+                    {!hideRowNumbers && (
+                      <TableCell
+                        align="center"
+                        sx={{ width: 60, color: "text.secondary" }}
+                      >
+                        {page * pageSize + index + 1}
+                      </TableCell>
+                    )}
+                    {columns.map((column) => (
+                      <TableCell key={column.id} align={column.align}>
+                        {column.format
+                          ? column.format(row[column.id], row)
+                          : row[column.id]}
+                      </TableCell>
+                    ))}
+                    {showActions && renderActionCell(row)}
+                  </StyledTableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </TableContainer>
 
-      <TablePagination
-        rowsPerPageOptions={[5, 10, 25, 50]}
-        component="div"
-        count={total}
-        rowsPerPage={pageSize}
-        page={page}
-        onPageChange={(_, newPage) => onPageChange(newPage)}
-        onRowsPerPageChange={(event) =>
-          onPageSizeChange(parseInt(event.target.value, 10))
-        }
-        sx={{
-          borderTop: 1,
-          borderColor: "divider",
-          "& .MuiTablePagination-toolbar": {
-            paddingX: 2,
-          },
-        }}
-      />
+        <TablePagination
+          rowsPerPageOptions={[5, 10, 25, 50]}
+          component="div"
+          count={total}
+          rowsPerPage={pageSize}
+          page={page}
+          onPageChange={(_, newPage) => onPageChange(newPage)}
+          onRowsPerPageChange={(event) =>
+            onPageSizeChange(parseInt(event.target.value, 10))
+          }
+          sx={{
+            borderTop: 1,
+            borderColor: "divider",
+            "& .MuiTablePagination-toolbar": {
+              paddingX: 2,
+            },
+          }}
+        />
+      </Box>
 
       {/* Action Menu */}
       <Menu

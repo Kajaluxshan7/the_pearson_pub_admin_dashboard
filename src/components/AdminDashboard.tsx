@@ -37,7 +37,6 @@ import {
   SwapHoriz,
   AccountTree,
 } from "@mui/icons-material";
-import { motion, AnimatePresence } from "framer-motion";
 import { DashboardView } from "./DashboardView";
 import { AdminsView } from "./AdminsView";
 import { CategoriesView } from "./CategoriesViewModern";
@@ -45,7 +44,7 @@ import { ItemsView } from "./ItemsViewModern";
 import AddonsViewModern from "./AddonsViewModern";
 import EventsViewModern from "./EventsViewModern";
 import OperationHoursViewModern from "./OperationHoursViewModern";
-import { SettingsView } from "./SettingsView";
+import { SettingsView } from "./SettingsViewRecreated";
 import { SpecialsDayView } from "./SpecialsDayView";
 import { SpecialsView } from "./SpecialsView";
 import { WingSaucesView } from "./WingSaucesView";
@@ -228,7 +227,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       case "operation-hours":
         return <OperationHoursViewModern userRole={userRole} />;
       case "settings":
-        return <SettingsView />;
+        return (
+          <SettingsView isDarkMode={isDarkMode} toggleTheme={toggleTheme} />
+        );
       default:
         return <DashboardView />;
     }
@@ -289,57 +290,51 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               }
               return true;
             })
-            .map((item, index) => (
-              <motion.div
+            .map((item) => (
+              <ListItem
                 key={item.id}
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: index * 0.05 }}
-              >
-                <ListItem
-                  component="div"
-                  onClick={() => {
-                    setSelectedView(item.id);
-                    if (isMobile) setMobileMenuOpen(false);
-                  }}
-                  sx={{
-                    mx: 2,
-                    mb: 0.5,
-                    borderRadius: 3,
+                component="div"
+                onClick={() => {
+                  setSelectedView(item.id);
+                  if (isMobile) setMobileMenuOpen(false);
+                }}
+                sx={{
+                  mx: 2,
+                  mb: 0.5,
+                  borderRadius: 3,
+                  backgroundColor:
+                    selectedView === item.id ? "#d9a419" : "transparent",
+                  color: selectedView === item.id ? "#111827" : "white",
+                  cursor: "pointer",
+                  "&:hover": {
                     backgroundColor:
-                      selectedView === item.id ? "#d9a419" : "transparent",
+                      selectedView === item.id
+                        ? "#d9a419"
+                        : "rgba(217, 164, 25, 0.15)",
+                    color: selectedView === item.id ? "#111827" : "#d9a419",
+                    transform: "translateX(4px)",
+                  },
+                  transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+                }}
+              >
+                <ListItemIcon
+                  sx={{
                     color: selectedView === item.id ? "#111827" : "white",
-                    cursor: "pointer",
-                    "&:hover": {
-                      backgroundColor:
-                        selectedView === item.id
-                          ? "#d9a419"
-                          : "rgba(217, 164, 25, 0.15)",
-                      color: selectedView === item.id ? "#111827" : "#d9a419",
-                      transform: "translateX(4px)",
-                    },
-                    transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+                    minWidth: 40,
                   }}
                 >
-                  <ListItemIcon
-                    sx={{
-                      color: selectedView === item.id ? "#111827" : "white",
-                      minWidth: 40,
-                    }}
-                  >
-                    {item.icon}
-                  </ListItemIcon>
-                  <ListItemText
-                    primary={item.label}
-                    sx={{
-                      "& .MuiTypography-root": {
-                        fontWeight: selectedView === item.id ? 600 : 400,
-                        fontSize: "0.95rem",
-                      },
-                    }}
-                  />
-                </ListItem>
-              </motion.div>
+                  {item.icon}
+                </ListItemIcon>
+                <ListItemText
+                  primary={item.label}
+                  sx={{
+                    "& .MuiTypography-root": {
+                      fontWeight: selectedView === item.id ? 600 : 400,
+                      fontSize: "0.95rem",
+                    },
+                  }}
+                />
+              </ListItem>
             ))}
         </List>
       </Box>
@@ -648,26 +643,23 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         <Box
           sx={{
             flex: 1,
-            p: { xs: 2, sm: 3 },
-            overflow: "auto",
+            display: "flex",
+            flexDirection: "column",
+            overflow: "hidden", // Prevent outer scrolling
             position: "relative",
+            height: "calc(100vh - 64px)", // Subtract AppBar height
           }}
         >
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={selectedView}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              transition={{
-                duration: 0.3,
-                ease: [0.4, 0, 0.2, 1],
-              }}
-              style={{ height: "100%" }}
-            >
-              {renderCurrentView()}
-            </motion.div>
-          </AnimatePresence>
+          <Box
+            sx={{
+              p: { xs: 2, sm: 3 },
+              flex: 1,
+              overflow: "auto", // Allow inner scrolling
+              height: "100%",
+            }}
+          >
+            {renderCurrentView()}
+          </Box>
         </Box>
       </Box>
     </Box>

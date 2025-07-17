@@ -37,7 +37,7 @@ export const CategoriesView: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(0);
-  const [pageSize, setPageSize] = useState(10);
+  const [pageSize, setPageSize] = useState(5);
   const [searchQuery, setSearchQuery] = useState("");
   // Dialog states
   const [addDialogOpen, setAddDialogOpen] = useState(false);

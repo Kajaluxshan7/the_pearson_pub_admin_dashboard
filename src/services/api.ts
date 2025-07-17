@@ -1,6 +1,7 @@
 import axios from "axios";
 
-const API_BASE_URL = "http://15.223.253.194:5000/"; // NestJS backend URL
+// const API_BASE_URL = "http://15.223.253.194:5000/"; // NestJS backend URL
+const API_BASE_URL = "http://localhost:5000/"; // NestJS backend URL
 
 // Create axios instance with common config
 const api = axios.create({
@@ -204,6 +205,25 @@ export const authService = {
   getProfile: (): Promise<Admin> =>
     api.get("/auth/profile").then((res) => res.data),
 
+  updateProfile: (data: {
+    first_name?: string;
+    phone?: string;
+    address?: string;
+  }): Promise<Admin> =>
+    api.patch("/admins/profile", data).then((res) => res.data),
+
+  uploadAvatar: (file: File): Promise<{ avatar_url: string }> => {
+    const formData = new FormData();
+    formData.append("avatar", file);
+    return api
+      .post("/admins/profile/avatar", formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      })
+      .then((res) => res.data);
+  },
+
   inviteAdmin: (data: { email: string; role: string }): Promise<any> =>
     api.post("/auth/invite-admin", data).then((res) => res.data),
 
@@ -301,18 +321,46 @@ export const itemService = {
     api.delete(`/items/${id}`).then((res) => res.data),
   getCount: (): Promise<number> =>
     api.get("/items/count").then((res) => res.data),
+
+  // Image upload and management methods
+  uploadImages: (
+    files: File[]
+  ): Promise<{ signedUrls?: string[]; imageUrls?: string[] }> => {
+    const formData = new FormData();
+    files.forEach((file) => {
+      formData.append("images", file);
+    });
+    return api
+      .post("/items/upload-images", formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      })
+      .then((res) => res.data);
+  },
+
+  deleteImage: (imageUrl: string): Promise<void> => {
+    const encodedUrl = encodeURIComponent(imageUrl);
+    return api.delete(`/items/images/${encodedUrl}`).then((res) => res.data);
+  },
 };
 
 export const addonService = {
   getAll: (
     page = 1,
     limit = 10,
-    itemId?: string,
-    search?: string
-  ): Promise<PaginatedResponse<Addon>> =>
-    api
-      .get("/addons", { params: { page, limit, itemId, search } })
-      .then((res) => res.data),
+    filters?: { [key: string]: any }
+  ): Promise<PaginatedResponse<Addon>> => {
+    const params: any = { page, limit };
+    if (filters) {
+      Object.keys(filters).forEach((key) => {
+        if (filters[key] && filters[key] !== "") {
+          params[key] = filters[key];
+        }
+      });
+    }
+    return api.get("/addons", { params }).then((res) => res.data);
+  },
 
   getById: (id: string): Promise<Addon> =>
     api.get(`/addons/${id}`).then((res) => res.data),
@@ -357,6 +405,28 @@ export const eventService = {
     api.delete(`/events/${id}`).then((res) => res.data),
   getCount: (): Promise<number> =>
     api.get("/events/count").then((res) => res.data),
+
+  // Image upload and management methods
+  uploadImages: (
+    files: File[]
+  ): Promise<{ signedUrls?: string[]; imageUrls?: string[] }> => {
+    const formData = new FormData();
+    files.forEach((file) => {
+      formData.append("images", file);
+    });
+    return api
+      .post("/events/upload-images", formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      })
+      .then((res) => res.data);
+  },
+
+  deleteImage: (imageUrl: string): Promise<void> => {
+    const encodedUrl = encodeURIComponent(imageUrl);
+    return api.delete(`/events/images/${encodedUrl}`).then((res) => res.data);
+  },
 };
 
 export const operationHourService = {

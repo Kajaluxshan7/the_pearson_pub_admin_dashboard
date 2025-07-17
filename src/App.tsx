@@ -8,7 +8,7 @@ import {
 import { ThemeProvider, createTheme } from "@mui/material/styles";
 import CssBaseline from "@mui/material/CssBaseline";
 import { AdminDashboard } from "./components/AdminDashboard";
-import { Login } from "./components/Login";
+import { LoginPage } from "./pages/LoginPage";
 import SetupPassword from "./pages/SetupPassword";
 
 const lightTheme = createTheme({
@@ -87,6 +87,7 @@ const AppContent: React.FC<{
   const checkAuthStatus = async () => {
     try {
       const response = await fetch("http://15.223.253.194:5000/auth/profile", {
+      // const response = await fetch("http://localhost:5000/auth/profile", {
         method: "GET",
         credentials: "include", // Include cookies
       });
@@ -109,7 +110,8 @@ const AppContent: React.FC<{
 
   const handleLogout = async () => {
     try {
-      await fetch("http://localhost:5000/auth/logout", {
+      // await fetch("http://localhost:5000/auth/logout", {
+        await fetch("http://15.223.253.194:5000/auth/logout", {
         method: "POST",
         credentials: "include", // Include cookies
       });
@@ -138,7 +140,11 @@ const AppContent: React.FC<{
     return (
       <ThemeProvider theme={isDarkMode ? darkTheme : lightTheme}>
         <CssBaseline />
-        <Login onLogin={handleLogin} />
+        <LoginPage
+          onLogin={handleLogin}
+          isDarkMode={isDarkMode}
+          toggleTheme={toggleTheme}
+        />
       </ThemeProvider>
     );
   }

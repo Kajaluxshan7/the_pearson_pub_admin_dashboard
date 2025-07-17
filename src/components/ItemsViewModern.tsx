@@ -52,7 +52,7 @@ export const ItemsView: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(0);
-  const [pageSize, setPageSize] = useState(10);
+  const [pageSize, setPageSize] = useState(5);
   const [searchQuery, setSearchQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const [availabilityFilter, setAvailabilityFilter] = useState<string>("all");
@@ -620,29 +620,9 @@ export const ItemsView: React.FC = () => {
     }
 
     try {
-      const formData = new FormData();
-      files.forEach((file) => {
-        formData.append("images", file);
-      });
-
-      const response = await fetch(
-        "http://localhost:5000/items/upload-images",
-        {
-          method: "POST",
-          credentials: "include",
-          body: formData,
-        }
-      );
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Failed to upload images");
-      }
-
-      const result = await response.json();
-
+      const result = await itemService.uploadImages(files);
       // Use signed URLs if available for better security
-      return result.signedUrls || result.imageUrls;
+      return result.signedUrls || result.imageUrls || [];
     } catch (error) {
       console.error("Error uploading images:", error);
       throw error;
@@ -656,22 +636,12 @@ export const ItemsView: React.FC = () => {
 
   const removeExistingImage = async (imageUrl: string, index: number) => {
     try {
-      const encodedUrl = encodeURIComponent(imageUrl);
-      const response = await fetch(
-        `http://localhost:5000/items/images/${encodedUrl}`,
-        {
-          method: "DELETE",
-          credentials: "include",
-        }
-      );
-
-      if (response.ok) {
-        setFormData((prev) => ({
-          ...prev,
-          images: prev.images.filter((_, i) => i !== index),
-        }));
-        showSnackbar("Image removed successfully", "success");
-      }
+      await itemService.deleteImage(imageUrl);
+      setFormData((prev) => ({
+        ...prev,
+        images: prev.images.filter((_, i) => i !== index),
+      }));
+      showSnackbar("Image removed successfully", "success");
     } catch (error) {
       console.error("Error removing image:", error);
       showSnackbar("Error removing image", "error");
