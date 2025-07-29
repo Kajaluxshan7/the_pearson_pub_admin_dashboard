@@ -100,6 +100,18 @@ const OperationHoursViewModern: React.FC<OperationHoursViewModernProps> = ({
     fetchOperationHourCount();
   }, []);
 
+  // Auto-refresh every minute to update "Open Now" status
+  useEffect(() => {
+    const interval = setInterval(() => {
+      // Only refresh the table data, not the counts
+      if (!loading) {
+        fetchOperationHours();
+      }
+    }, 60000); // 60 seconds
+
+    return () => clearInterval(interval);
+  }, [loading, paginationModel, selectedDay]);
+
   const fetchOperationHours = async () => {
     try {
       setLoading(true);
@@ -259,6 +271,50 @@ const OperationHoursViewModern: React.FC<OperationHoursViewModernProps> = ({
     return `${displayHour}:${minutes} ${ampm}`;
   };
 
+  // Utility function to check if currently open
+  const isCurrentlyOpen = (
+    day: string,
+    openTime: string,
+    closeTime: string
+  ) => {
+    const now = new Date();
+    const currentTime = now.toTimeString().slice(0, 5); // HH:MM format
+
+    // Map JavaScript day to our day format
+    const days = [
+      "sunday",
+      "monday",
+      "tuesday",
+      "wednesday",
+      "thursday",
+      "friday",
+      "saturday",
+    ];
+    const todayDay = days[now.getDay()];
+
+    // Check if it's the correct day
+    if (day.toLowerCase() !== todayDay) {
+      return false;
+    }
+
+    // Convert times to minutes for comparison
+    const timeToMinutes = (time: string) => {
+      const [hours, minutes] = time.split(":").map(Number);
+      return hours * 60 + minutes;
+    };
+
+    const currentMinutes = timeToMinutes(currentTime);
+    const openMinutes = timeToMinutes(openTime);
+    const closeMinutes = timeToMinutes(closeTime);
+
+    // Handle overnight hours (e.g., open until 2 AM next day)
+    if (closeMinutes < openMinutes) {
+      return currentMinutes >= openMinutes || currentMinutes <= closeMinutes;
+    }
+
+    return currentMinutes >= openMinutes && currentMinutes <= closeMinutes;
+  };
+
   const formatDay = (day: string) => {
     const dayObj = DAYS_OF_WEEK.find((d) => d.value === day);
     return dayObj ? dayObj.label : day;
@@ -310,13 +366,38 @@ const OperationHoursViewModern: React.FC<OperationHoursViewModernProps> = ({
       id: "status",
       label: "Status",
       minWidth: 120,
-      format: (value: any) => (
-        <Chip
-          label={value ? "Open" : "Closed"}
-          color={value ? "success" : "error"}
-          size="small"
-        />
-      ),
+      format: (_value: any, row: any) => {
+        const isOpen = isCurrentlyOpen(row.day, row.open_time, row.close_time);
+        const isEnabledAndOpen = row.status && isOpen;
+
+        return (
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+            <Chip
+              label={
+                isEnabledAndOpen
+                  ? "Open Now"
+                  : row.status
+                  ? "Closed Now"
+                  : "Disabled"
+              }
+              color={
+                isEnabledAndOpen ? "success" : row.status ? "warning" : "error"
+              }
+              size="small"
+              sx={{
+                fontWeight: 600,
+                "& .MuiChip-label": {
+                  px: 1.5,
+                },
+              }}
+            />
+            {/* Show static enabled/disabled status as secondary info */}
+            <Typography variant="caption" color="text.secondary">
+              ({row.status ? "Enabled" : "Disabled"})
+            </Typography>
+          </Box>
+        );
+      },
     },
     {
       id: "created_at",
@@ -383,7 +464,13 @@ const OperationHoursViewModern: React.FC<OperationHoursViewModernProps> = ({
         {/* Filters */}
         <Card
           elevation={0}
-          sx={{ mb: 3, backgroundColor: theme.palette.grey[50] }}
+          sx={{
+            mb: 3,
+            backgroundColor:
+              theme.palette.mode === "dark"
+                ? theme.palette.background.paper
+                : theme.palette.grey[50],
+          }}
         >
           <CardContent>
             <Box display="flex" gap={2} flexWrap="wrap" alignItems="center">

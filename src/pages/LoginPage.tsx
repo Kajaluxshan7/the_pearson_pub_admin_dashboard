@@ -20,11 +20,9 @@ import {
   VisibilityOff,
   Google,
   AdminPanelSettings,
-  Restaurant,
   Security,
   LightMode,
   DarkMode,
-  Image,
 } from "@mui/icons-material";
 import { motion } from "framer-motion";
 import { authService } from "../services/api";
@@ -92,6 +90,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({
         ...prev,
         [field]: event.target.value,
       }));
+      // Clear error when user starts typing
       if (error) setError("");
     };
 
@@ -122,9 +121,24 @@ export const LoginPage: React.FC<LoginPageProps> = ({
       onLogin(token, adminData);
     } catch (error: any) {
       console.error("Login error:", error);
-      setError(
-        error.response?.data?.message || "Login failed. Please try again."
-      );
+
+      // Extract meaningful error message
+      let errorMessage = "Login failed. Please try again.";
+
+      if (error.response?.status === 401) {
+        errorMessage =
+          error.response?.data?.message || "Invalid email or password.";
+      } else if (error.response?.status === 400) {
+        errorMessage =
+          error.response?.data?.message ||
+          "Please check your input and try again.";
+      } else if (error.response?.status >= 500) {
+        errorMessage = "Server error. Please try again later.";
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }

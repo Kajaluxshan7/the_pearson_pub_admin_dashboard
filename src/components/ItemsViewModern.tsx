@@ -77,6 +77,7 @@ export const ItemsView: React.FC = () => {
     description: "",
     price: "",
     original_price: "",
+    discount: "", // Add discount field
     categoryId: "",
     availability: true,
     visibility: true,
@@ -150,11 +151,20 @@ export const ItemsView: React.FC = () => {
   };
   const handleEdit = (item: Item) => {
     setSelectedItem(item);
+    // Calculate discount percentage from original_price and current price
+    const discountPercent =
+      item.original_price && item.original_price > 0
+        ? Math.round(
+            ((item.original_price - item.price) / item.original_price) * 100
+          )
+        : 0;
+
     setFormData({
       name: item.name,
       description: item.description || "",
-      price: item.price.toString(),
-      original_price: item.original_price.toString(),
+      price: item.price ? item.price.toString() : "",
+      original_price: item.original_price ? item.original_price.toString() : "",
+      discount: discountPercent > 0 ? discountPercent.toString() : "",
       categoryId: item.categoryId,
       availability: item.availability,
       visibility: item.visibility,
@@ -177,15 +187,76 @@ export const ItemsView: React.FC = () => {
       setConfirmDialogOpen(false);
       setItemToDelete(null);
       fetchItems(); // Refresh the list
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error deleting item:", error);
-      showSnackbar("Error deleting item", "error");
+      const errorMessage =
+        error?.response?.data?.message ||
+        error?.message ||
+        "Error deleting item";
+      showSnackbar(errorMessage, "error");
     }
   };
 
   const handleView = (item: Item) => {
     setSelectedItem(item);
     setViewDialogOpen(true);
+  };
+
+  // Calculate price based on original price and discount percentage
+  const calculatePriceFromDiscount = (
+    originalPrice: number,
+    discount: number
+  ): number => {
+    if (discount < 0 || discount > 100) return originalPrice;
+    return originalPrice * (1 - discount / 100);
+  };
+
+  // Handle discount change and auto-calculate price
+  const handleDiscountChange = (discountValue: string) => {
+    const discount = parseFloat(discountValue) || 0;
+    const originalPrice = parseFloat(formData.original_price) || 0;
+
+    // Calculate price only if both original price and discount are provided
+    if (
+      formData.original_price &&
+      originalPrice > 0 &&
+      discount >= 0 &&
+      discount <= 100
+    ) {
+      const newPrice = calculatePriceFromDiscount(originalPrice, discount);
+      setFormData((prev) => ({
+        ...prev,
+        discount: discountValue,
+        price: newPrice.toFixed(2),
+      }));
+    } else {
+      setFormData((prev) => ({
+        ...prev,
+        discount: discountValue,
+      }));
+    }
+  };
+
+  // Handle original price change and recalculate price if discount exists
+  const handleOriginalPriceChange = (originalPriceValue: string) => {
+    const originalPrice = parseFloat(originalPriceValue) || 0;
+    const discount = parseFloat(formData.discount) || 0;
+
+    // Calculate price only if original price is provided
+    if (originalPriceValue && originalPrice > 0) {
+      const newPrice = calculatePriceFromDiscount(originalPrice, discount);
+      setFormData((prev) => ({
+        ...prev,
+        original_price: originalPriceValue,
+        price: newPrice.toFixed(2),
+      }));
+    } else {
+      setFormData((prev) => ({
+        ...prev,
+        original_price: originalPriceValue,
+        price: "",
+      }));
+    }
   };
 
   const handleSave = async () => {
@@ -201,16 +272,22 @@ export const ItemsView: React.FC = () => {
         return;
       }
 
-      if (!formData.price || parseFloat(formData.price) <= 0) {
-        showSnackbar("Price must be greater than 0", "error");
+      // Only validate price if original_price is provided
+      if (formData.original_price && parseFloat(formData.original_price) <= 0) {
+        showSnackbar(
+          "Original price must be greater than 0 if provided",
+          "error"
+        );
         return;
       }
 
+      // Only validate discount if provided
       if (
-        !formData.original_price ||
-        parseFloat(formData.original_price) <= 0
+        formData.discount &&
+        (parseFloat(formData.discount) < 0 ||
+          parseFloat(formData.discount) > 100)
       ) {
-        showSnackbar("Original price must be greater than 0", "error");
+        showSnackbar("Discount must be between 0 and 100 if provided", "error");
         return;
       }
 
@@ -226,8 +303,11 @@ export const ItemsView: React.FC = () => {
       const saveData = {
         name: formData.name.trim(),
         description: formData.description.trim(),
-        price: parseFloat(formData.price),
-        original_price: parseFloat(formData.original_price),
+        price: formData.price ? parseFloat(formData.price) : 0,
+        original_price: formData.original_price
+          ? parseFloat(formData.original_price)
+          : undefined,
+        discount: formData.discount ? parseFloat(formData.discount) : undefined,
         categoryId: formData.categoryId,
         availability: formData.availability,
         visibility: formData.visibility,
@@ -265,6 +345,7 @@ export const ItemsView: React.FC = () => {
       description: "",
       price: "",
       original_price: "",
+      discount: "",
       categoryId: "",
       availability: true,
       visibility: true,
@@ -344,30 +425,70 @@ export const ItemsView: React.FC = () => {
       id: "price",
       label: "Price",
       minWidth: 100,
-      format: (value: any) => (
-        <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-          <AttachMoney sx={{ fontSize: 16, color: "success.main" }} />
-          <Typography variant="body2" fontWeight={600} color="success.main">
-            ${value}
+      format: (value: any) =>
+        value !== null && value !== undefined ? (
+          <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+            <AttachMoney sx={{ fontSize: 16, color: "success.main" }} />
+            <Typography variant="body2" fontWeight={600} color="success.main">
+              {value}
+            </Typography>
+          </Box>
+        ) : (
+          <Typography variant="body2" color="text.secondary">
+            -
           </Typography>
-        </Box>
-      ),
+        ),
     },
     {
       id: "original_price",
       label: "Original Price",
       minWidth: 120,
-      format: (value: any, row: any) => (
-        <Typography
-          variant="body2"
-          color="text.secondary"
-          sx={{
-            textDecoration: value !== row.price ? "line-through" : "none",
-          }}
-        >
-          ${value}
-        </Typography>
-      ),
+      format: (value: any, row: any) =>
+        value !== null && value !== undefined ? (
+          <Typography
+            variant="body2"
+            color="text.secondary"
+            sx={{
+              textDecoration: value !== row.price ? "line-through" : "none",
+            }}
+          >
+            ${value}
+          </Typography>
+        ) : (
+          <Typography variant="body2" color="text.secondary">
+            -
+          </Typography>
+        ),
+    },
+    {
+      id: "discount",
+      label: "Discount",
+      minWidth: 100,
+      format: (_: any, row: any) => {
+        const originalPrice = parseFloat(row.original_price) || 0;
+        const currentPrice = parseFloat(row.price) || 0;
+        const discountPercent =
+          originalPrice > 0
+            ? Math.round(((originalPrice - currentPrice) / originalPrice) * 100)
+            : 0;
+
+        return discountPercent > 0 ? (
+          <Chip
+            label={`${discountPercent}% OFF`}
+            size="small"
+            sx={{
+              backgroundColor: theme.palette.error.light + "22",
+              color: theme.palette.error.main,
+              fontWeight: 600,
+              borderRadius: 2,
+            }}
+          />
+        ) : (
+          <Typography variant="body2" color="text.secondary">
+            No discount
+          </Typography>
+        );
+      },
     },
     {
       id: "availability",
@@ -901,25 +1022,35 @@ export const ItemsView: React.FC = () => {
               <Grid item xs={6}>
                 <TextField
                   fullWidth
-                  label="Price"
+                  label="Original Price (Optional)"
                   type="number"
-                  value={formData.price}
-                  onChange={(e) =>
-                    setFormData({ ...formData, price: e.target.value })
-                  }
+                  value={formData.original_price}
+                  onChange={(e) => handleOriginalPriceChange(e.target.value)}
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">$</InputAdornment>
+                    ),
+                  }}
+                  helperText="Leave empty if no pricing needed"
                 />
               </Grid>
               <Grid item xs={6}>
                 <TextField
                   fullWidth
-                  label="Original Price"
+                  label="Discount % (Optional)"
                   type="number"
-                  value={formData.original_price}
-                  onChange={(e) =>
-                    setFormData({ ...formData, original_price: e.target.value })
-                  }
+                  value={formData.discount}
+                  onChange={(e) => handleDiscountChange(e.target.value)}
+                  inputProps={{ min: 0, max: 100 }}
+                  InputProps={{
+                    endAdornment: (
+                      <InputAdornment position="end">%</InputAdornment>
+                    ),
+                  }}
+                  helperText="Final price will be calculated automatically if original price is provided"
                 />
               </Grid>
+              {/* Price field is hidden - calculated automatically from original_price and discount */}
               <Grid item xs={12}>
                 <FormControl fullWidth>
                   <InputLabel>Category</InputLabel>

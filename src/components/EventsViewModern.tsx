@@ -645,7 +645,13 @@ const EventsViewModern: React.FC<EventsViewModernProps> = ({ userRole }) => {
         {/* Filters */}
         <Card
           elevation={0}
-          sx={{ mb: 3, backgroundColor: theme.palette.grey[50] }}
+          sx={{
+            mb: 3,
+            backgroundColor:
+              theme.palette.mode === "dark"
+                ? theme.palette.background.paper
+                : theme.palette.grey[50],
+          }}
         >
           <CardContent>
             <Box display="flex" gap={2} flexWrap="wrap" alignItems="center">

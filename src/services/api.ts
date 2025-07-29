@@ -12,9 +12,14 @@ const api = axios.create({
   },
 });
 
-// Request interceptor - no need to manually add auth token as it's in cookies
+// Request interceptor to add auth token from localStorage if available
 api.interceptors.request.use(
   (config) => {
+    // First try to get token from localStorage (for manual testing)
+    const token = localStorage.getItem("authToken");
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
     return config;
   },
   (error) => {
@@ -27,8 +32,14 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      // Handle unauthorized access
-      window.location.href = "/login";
+      // Only redirect to login if this is NOT a login attempt
+      const isLoginRequest = error.config?.url?.includes("/auth/login");
+
+      if (!isLoginRequest) {
+        // Handle unauthorized access for protected routes
+        window.location.href = "/login";
+      }
+      // For login requests, let the component handle the error
     }
     return Promise.reject(error);
   }
@@ -71,6 +82,7 @@ export interface Item {
   description?: string;
   original_price: number;
   price: number;
+  discount?: number;
   ingredients: string[];
   sizes: string[];
   images: string[];
@@ -132,15 +144,25 @@ export interface Special {
   id: string;
   special_type: "daily" | "seasonal" | "latenight";
   specialsDayId?: string;
-  name: string;
+  name?: string; // Name of the special
+  season_name?: string; // Only for seasonal specials
   description?: string;
-  price: number;
-  from_menu: boolean;
-  menuItemId?: string;
-  categoryId?: string;
-  seasonal_start_date?: string;
-  seasonal_end_date?: string;
+  image_url?: string;
+  image_urls?: string[]; // Support for multiple images
+  seasonal_start_datetime?: string; // ISO timestamp for seasonal specials
+  seasonal_end_datetime?: string; // ISO timestamp for seasonal specials
   lastEditedByAdminId: string;
+  lastEditedByAdmin?: Admin;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Story {
+  id: string;
+  story_name: string;
+  description?: string;
+  images: string[]; // Support for up to 5 images
+  lastEditedByAdminId?: string;
   lastEditedByAdmin?: Admin;
   created_at: string;
   updated_at: string;
@@ -161,18 +183,6 @@ export interface SubstituteSide {
   name: string;
   price: number;
   description?: string;
-  lastEditedByAdminId?: string;
-  lastEditedByAdmin?: Admin;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface ItemAddonsRelation {
-  id: string;
-  itemId: string;
-  addonId: string;
-  item?: Item; // Optional joined item data
-  addon?: Addon; // Optional joined addon data
   lastEditedByAdminId?: string;
   lastEditedByAdmin?: Admin;
   created_at: string;
@@ -491,11 +501,96 @@ export const specialsService = {
   getById: (id: string): Promise<Special> =>
     api.get(`/specials/${id}`).then((res) => res.data),
 
-  create: (data: Partial<Special>): Promise<Special> =>
-    api.post("/specials", data).then((res) => res.data),
+  create: (data: Partial<Special>, images?: File[]): Promise<Special> => {
+    const formData = new FormData();
 
-  update: (id: string, data: Partial<Special>): Promise<Special> =>
-    api.patch(`/specials/${id}`, data).then((res) => res.data),
+    // Add form fields
+    Object.entries(data).forEach(([key, value]) => {
+      if (value !== undefined && value !== null) {
+        formData.append(key, value.toString());
+      }
+    });
+
+    // Add images if provided (up to 5)
+    if (images && images.length > 0) {
+      const limitedImages = images.slice(0, 5); // Limit to 5 images
+      limitedImages.forEach((image) => {
+        formData.append("images", image);
+      });
+    }
+
+    return api
+      .post("/specials", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      })
+      .then((res) => res.data);
+  },
+
+  update: (
+    id: string,
+    data: Partial<Special>,
+    images?: File[]
+  ): Promise<Special> => {
+    const formData = new FormData();
+
+    // Add form fields
+    Object.entries(data).forEach(([key, value]) => {
+      if (value !== undefined && value !== null) {
+        if (Array.isArray(value)) {
+          // Handle arrays (like removeImages)
+          value.forEach((item, index) => {
+            formData.append(`${key}[${index}]`, item.toString());
+          });
+        } else {
+          formData.append(key, value.toString());
+        }
+      }
+    });
+
+    // Add images if provided (up to 5)
+    if (images && images.length > 0) {
+      const limitedImages = images.slice(0, 5); // Limit to 5 images
+      limitedImages.forEach((image) => {
+        formData.append("images", image);
+      });
+    }
+
+    return api
+      .patch(`/specials/${id}`, formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      })
+      .then((res) => res.data);
+  },
+
+  uploadImage: (file: File): Promise<{ imageUrl: string }> => {
+    const formData = new FormData();
+    formData.append("image", file);
+
+    return api
+      .post("/specials/upload-image", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      })
+      .then((res) => res.data);
+  },
+
+  uploadImages: (files: File[]): Promise<{ imageUrls: string[] }> => {
+    const formData = new FormData();
+    const limitedFiles = files.slice(0, 5); // Limit to 5 images
+    limitedFiles.forEach((file) => {
+      formData.append("images", file);
+    });
+
+    return api
+      .post("/specials/upload-images", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      })
+      .then((res) => res.data);
+  },
+
+  deleteImage: (imageUrl: string): Promise<void> =>
+    api
+      .delete(`/specials/images/${encodeURIComponent(imageUrl)}`)
+      .then((res) => res.data),
 
   delete: (id: string): Promise<void> =>
     api.delete(`/specials/${id}`).then((res) => res.data),
@@ -550,49 +645,122 @@ export const substituteSideService = {
     api.delete(`/substitute-sides/${id}`).then((res) => res.data),
 };
 
-export const itemAddonsRelationService = {
+// Task service for dashboard tasks
+export const taskService = {
+  toggleComplete: (id: string): Promise<Task> =>
+    api.patch(`/tasks/${id}/toggle`).then((res) => res.data),
+};
+
+export const storiesService = {
   getAll: (
     page = 1,
     limit = 10,
-    itemId?: string,
-    addonId?: string
-  ): Promise<PaginatedResponse<ItemAddonsRelation>> =>
+    search?: string
+  ): Promise<PaginatedResponse<Story>> =>
     api
-      .get("/item-addons-relations", {
-        params: { page, limit, itemId, addonId },
+      .get("/stories", { params: { page, limit, search } })
+      .then((res) => res.data),
+
+  getById: (id: string): Promise<Story> =>
+    api.get(`/stories/${id}`).then((res) => res.data),
+
+  create: (data: Partial<Story>, images?: File[]): Promise<Story> => {
+    const formData = new FormData();
+
+    // Add form fields
+    Object.entries(data).forEach(([key, value]) => {
+      if (value !== undefined && value !== null && key !== "images") {
+        formData.append(key, value.toString());
+      }
+    });
+
+    // Add images if provided (up to 5)
+    if (images && images.length > 0) {
+      const limitedImages = images.slice(0, 5); // Limit to 5 images
+      limitedImages.forEach((image) => {
+        formData.append("images", image);
+      });
+    }
+
+    return api
+      .post("/stories", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
       })
-      .then((res) => res.data),
-
-  getById: (id: string): Promise<ItemAddonsRelation> =>
-    api.get(`/item-addons-relations/${id}`).then((res) => res.data),
-
-  getByItemId: (itemId: string): Promise<ItemAddonsRelation[]> =>
-    api.get(`/item-addons-relations/by-item/${itemId}`).then((res) => res.data),
-
-  getByAddonId: (addonId: string): Promise<ItemAddonsRelation[]> =>
-    api
-      .get(`/item-addons-relations/by-addon/${addonId}`)
-      .then((res) => res.data),
-
-  create: (data: Partial<ItemAddonsRelation>): Promise<ItemAddonsRelation> =>
-    api.post("/item-addons-relations", data).then((res) => res.data),
+      .then((res) => res.data);
+  },
 
   update: (
     id: string,
-    data: Partial<ItemAddonsRelation>
-  ): Promise<ItemAddonsRelation> =>
-    api.patch(`/item-addons-relations/${id}`, data).then((res) => res.data),
+    data: Partial<Story>,
+    images?: File[],
+    removeImages?: string[]
+  ): Promise<Story> => {
+    const formData = new FormData();
+
+    // Add form fields
+    Object.entries(data).forEach(([key, value]) => {
+      if (value !== undefined && value !== null && key !== "images") {
+        formData.append(key, value.toString());
+      }
+    });
+
+    // Add remove images if provided
+    if (removeImages && removeImages.length > 0) {
+      removeImages.forEach((imageUrl) => {
+        formData.append("removeImages", imageUrl);
+      });
+    }
+
+    // Add new images if provided (up to 5)
+    if (images && images.length > 0) {
+      const limitedImages = images.slice(0, 5); // Limit to 5 images
+      limitedImages.forEach((image) => {
+        formData.append("images", image);
+      });
+    }
+
+    return api
+      .patch(`/stories/${id}`, formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      })
+      .then((res) => res.data);
+  },
+
+  uploadImages: (
+    id: string,
+    files: File[]
+  ): Promise<{ imageUrls: string[] }> => {
+    const formData = new FormData();
+    const limitedFiles = files.slice(0, 5); // Limit to 5 images
+    limitedFiles.forEach((file) => {
+      formData.append("images", file);
+    });
+
+    return api
+      .post(`/stories/${id}/images`, formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      })
+      .then((res) => res.data);
+  },
+
+  removeImage: (id: string, imageUrl: string): Promise<void> =>
+    api
+      .delete(`/stories/${id}/images`, {
+        data: { imageUrl },
+      })
+      .then((res) => res.data),
 
   delete: (id: string): Promise<void> =>
-    api.delete(`/item-addons-relations/${id}`).then((res) => res.data),
+    api.delete(`/stories/${id}`).then((res) => res.data),
 };
 
-// Task service for dashboard tasks
-export const taskService = {
+// Tasks Service
+export const tasksService = {
   getAll: (): Promise<Task[]> => api.get("/tasks").then((res) => res.data),
 
-  create: (task: Partial<Task>): Promise<Task> =>
-    api.post("/tasks", task).then((res) => res.data),
+  create: (
+    task: Omit<Task, "id" | "created_at" | "updated_at">
+  ): Promise<Task> => api.post("/tasks", task).then((res) => res.data),
 
   update: (id: string, task: Partial<Task>): Promise<Task> =>
     api.put(`/tasks/${id}`, task).then((res) => res.data),

@@ -35,7 +35,7 @@ import {
   LocalOffer,
   Fastfood,
   SwapHoriz,
-  AccountTree,
+  AutoStories,
 } from "@mui/icons-material";
 import { DashboardView } from "./DashboardView";
 import { AdminsView } from "./AdminsView";
@@ -49,7 +49,7 @@ import { SpecialsDayView } from "./SpecialsDayView";
 import { SpecialsView } from "./SpecialsView";
 import { WingSaucesView } from "./WingSaucesView";
 import { SubstituteSidesView } from "./SubstituteSidesView";
-import ItemAddonsRelationsView from "./ItemAddonsRelationsView";
+import StoriesViewModern from "./StoriesViewModern";
 import { authService } from "../services/api";
 
 const drawerWidth = 280;
@@ -103,12 +103,6 @@ const sidebarItems: SidebarItem[] = [
     component: AddonsViewModern,
   },
   {
-    id: "item-addons-relations",
-    label: "Item-Addon Relations",
-    icon: <AccountTree />,
-    component: ItemAddonsRelationsView,
-  },
-  {
     id: "specials-days",
     label: "Specials Days",
     icon: <CalendarToday />,
@@ -119,6 +113,12 @@ const sidebarItems: SidebarItem[] = [
     label: "Specials",
     icon: <LocalOffer />,
     component: SpecialsView,
+  },
+  {
+    id: "stories",
+    label: "Stories",
+    icon: <AutoStories />,
+    component: StoriesViewModern,
   },
   {
     id: "wing-sauces",
@@ -212,12 +212,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         return <ItemsView />;
       case "addons":
         return <AddonsViewModern userRole={userRole} />;
-      case "item-addons-relations":
-        return <ItemAddonsRelationsView />;
       case "specials-days":
         return userRole === "superadmin" ? <SpecialsDayView /> : null;
       case "specials":
         return <SpecialsView />;
+      case "stories":
+        return <StoriesViewModern />;
       case "wing-sauces":
         return <WingSaucesView />;
       case "substitute-sides":

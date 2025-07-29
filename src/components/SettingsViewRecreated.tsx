@@ -27,12 +27,10 @@ import {
 import Grid from "@mui/material/GridLegacy";
 import {
   Person,
-  Notifications,
   Palette,
   Save,
   PhotoCamera,
   Edit,
-  Security,
   DarkMode,
   LightMode,
   Email,
@@ -40,7 +38,6 @@ import {
   LocationOn,
   Cancel,
   Brightness6,
-  NotificationsActive,
   Shield,
   AccountCircle,
 } from "@mui/icons-material";
@@ -60,20 +57,6 @@ interface UserProfile {
   address?: string;
   avatar_url?: string;
   role: string;
-}
-
-interface NotificationSettings {
-  email: boolean;
-  push: boolean;
-  sms: boolean;
-  marketing: boolean;
-  security: boolean;
-}
-
-interface SecuritySettings {
-  twoFactorAuth: boolean;
-  sessionTimeout: number;
-  passwordExpiry: boolean;
 }
 
 interface AppearanceSettings {
@@ -133,20 +116,6 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
   const [uploading, setUploading] = useState(false);
 
   // Settings state
-  const [notifications, setNotifications] = useState<NotificationSettings>({
-    email: true,
-    push: true,
-    sms: false,
-    marketing: false,
-    security: true,
-  });
-
-  const [security, setSecurity] = useState<SecuritySettings>({
-    twoFactorAuth: false,
-    sessionTimeout: 30,
-    passwordExpiry: true,
-  });
-
   const [appearance, setAppearance] = useState<AppearanceSettings>({
     theme: isDarkMode ? "dark" : "light",
     language: "en",
@@ -230,9 +199,13 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
         address: profileForm.address,
       });
       showSnackbar("Profile updated successfully", "success");
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error updating profile:", error);
-      showSnackbar("Failed to update profile", "error");
+      const errorMessage =
+        error?.response?.data?.message ||
+        error?.message ||
+        "Failed to update profile";
+      showSnackbar(errorMessage, "error");
     } finally {
       setSaving(false);
     }
@@ -280,9 +253,13 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
         prev ? { ...prev, avatar_url: result.avatar_url } : null
       );
       showSnackbar("Avatar uploaded successfully", "success");
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error uploading avatar:", error);
-      showSnackbar("Failed to upload avatar", "error");
+      const errorMessage =
+        error?.response?.data?.message ||
+        error?.message ||
+        "Failed to upload avatar";
+      showSnackbar(errorMessage, "error");
     } finally {
       setUploading(false);
     }
@@ -626,230 +603,9 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
     </Card>
   );
 
-  // Notifications Tab Component
-  const NotificationsTab = () => (
-    <Card
-      elevation={0}
-      sx={{
-        background: `linear-gradient(135deg, ${alpha(
-          theme.palette.warning.main,
-          0.05
-        )} 0%, ${alpha(theme.palette.info.main, 0.05)} 100%)`,
-        border: `1px solid ${alpha(theme.palette.warning.main, 0.1)}`,
-        borderRadius: 3,
-      }}
-    >
-      <CardHeader
-        title={
-          <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-            <NotificationsActive color="warning" sx={{ fontSize: 28 }} />
-            <Typography variant="h6" fontWeight={600}>
-              Notification Preferences
-            </Typography>
-          </Box>
-        }
-        sx={{ pb: 1 }}
-      />
-      <CardContent>
-        <Grid container spacing={3}>
-          {Object.entries(notifications).map(([key, value]) => (
-            <Grid item xs={12} sm={6} key={key}>
-              <Paper
-                elevation={0}
-                sx={{
-                  p: 3,
-                  borderRadius: 2,
-                  border: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
-                  backgroundColor: alpha(theme.palette.background.paper, 0.7),
-                  transition: "all 0.3s ease",
-                  "&:hover": {
-                    transform: "translateY(-2px)",
-                    boxShadow: `0 8px 24px ${alpha(
-                      theme.palette.primary.main,
-                      0.1
-                    )}`,
-                  },
-                }}
-              >
-                <FormControlLabel
-                  control={
-                    <Switch
-                      checked={value}
-                      onChange={(e) =>
-                        setNotifications((prev) => ({
-                          ...prev,
-                          [key]: e.target.checked,
-                        }))
-                      }
-                      color="primary"
-                    />
-                  }
-                  label={
-                    <Box>
-                      <Typography
-                        variant="body1"
-                        fontWeight={600}
-                        sx={{ textTransform: "capitalize" }}
-                      >
-                        {key.replace(/([A-Z])/g, " $1").trim()}
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        {key === "email" && "Receive notifications via email"}
-                        {key === "push" && "Browser push notifications"}
-                        {key === "sms" && "SMS text message alerts"}
-                        {key === "marketing" &&
-                          "Marketing and promotional content"}
-                        {key === "security" && "Security alerts and warnings"}
-                      </Typography>
-                    </Box>
-                  }
-                  sx={{ m: 0, width: "100%", alignItems: "flex-start" }}
-                />
-              </Paper>
-            </Grid>
-          ))}
-        </Grid>
-      </CardContent>
-    </Card>
-  );
+  // NotificationsTab component removed - not currently used in tabs array
 
-  // Security Tab Component
-  const SecurityTab = () => (
-    <Card
-      elevation={0}
-      sx={{
-        background: `linear-gradient(135deg, ${alpha(
-          theme.palette.error.main,
-          0.05
-        )} 0%, ${alpha(theme.palette.warning.main, 0.05)} 100%)`,
-        border: `1px solid ${alpha(theme.palette.error.main, 0.1)}`,
-        borderRadius: 3,
-      }}
-    >
-      <CardHeader
-        title={
-          <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-            <Security color="error" sx={{ fontSize: 28 }} />
-            <Typography variant="h6" fontWeight={600}>
-              Security Settings
-            </Typography>
-          </Box>
-        }
-        sx={{ pb: 1 }}
-      />
-      <CardContent>
-        <Grid container spacing={3}>
-          <Grid item xs={12}>
-            <Paper
-              elevation={0}
-              sx={{
-                p: 3,
-                borderRadius: 2,
-                border: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
-                backgroundColor: alpha(theme.palette.background.paper, 0.7),
-              }}
-            >
-              <FormControlLabel
-                control={
-                  <Switch
-                    checked={security.twoFactorAuth}
-                    onChange={(e) =>
-                      setSecurity((prev) => ({
-                        ...prev,
-                        twoFactorAuth: e.target.checked,
-                      }))
-                    }
-                    color="primary"
-                  />
-                }
-                label={
-                  <Box>
-                    <Typography variant="body1" fontWeight={600}>
-                      Two-Factor Authentication
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      Add an extra layer of security to your account
-                    </Typography>
-                  </Box>
-                }
-                sx={{ m: 0, width: "100%", alignItems: "flex-start" }}
-              />
-            </Paper>
-          </Grid>
-          <Grid item xs={12} md={6}>
-            <Paper
-              elevation={0}
-              sx={{
-                p: 3,
-                borderRadius: 2,
-                border: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
-                backgroundColor: alpha(theme.palette.background.paper, 0.7),
-              }}
-            >
-              <Typography variant="body1" fontWeight={600} gutterBottom>
-                Session Timeout
-              </Typography>
-              <FormControl fullWidth>
-                <Select
-                  value={security.sessionTimeout}
-                  onChange={(e) =>
-                    setSecurity((prev) => ({
-                      ...prev,
-                      sessionTimeout: e.target.value as number,
-                    }))
-                  }
-                  sx={{ borderRadius: 2 }}
-                >
-                  <MenuItem value={15}>15 minutes</MenuItem>
-                  <MenuItem value={30}>30 minutes</MenuItem>
-                  <MenuItem value={60}>1 hour</MenuItem>
-                  <MenuItem value={120}>2 hours</MenuItem>
-                  <MenuItem value={480}>8 hours</MenuItem>
-                </Select>
-              </FormControl>
-            </Paper>
-          </Grid>
-          <Grid item xs={12} md={6}>
-            <Paper
-              elevation={0}
-              sx={{
-                p: 3,
-                borderRadius: 2,
-                border: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
-                backgroundColor: alpha(theme.palette.background.paper, 0.7),
-              }}
-            >
-              <FormControlLabel
-                control={
-                  <Switch
-                    checked={security.passwordExpiry}
-                    onChange={(e) =>
-                      setSecurity((prev) => ({
-                        ...prev,
-                        passwordExpiry: e.target.checked,
-                      }))
-                    }
-                    color="primary"
-                  />
-                }
-                label={
-                  <Box>
-                    <Typography variant="body1" fontWeight={600}>
-                      Password Expiry
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      Require password change every 90 days
-                    </Typography>
-                  </Box>
-                }
-                sx={{ m: 0, width: "100%", alignItems: "flex-start" }}
-              />
-            </Paper>
-          </Grid>
-        </Grid>
-      </CardContent>
-    </Card>
-  );
+  // SecurityTab component removed - not currently used in tabs array
 
   // Appearance Tab Component
   const AppearanceTab = () => (
@@ -1041,12 +797,6 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
 
   const tabs = [
     { label: "Profile", icon: <Person />, component: ProfileTab },
-    {
-      label: "Notifications",
-      icon: <Notifications />,
-      component: NotificationsTab,
-    },
-    { label: "Security", icon: <Security />, component: SecurityTab },
     { label: "Appearance", icon: <Palette />, component: AppearanceTab },
   ];
 

@@ -172,9 +172,13 @@ export const AddonsViewModern: React.FC<AddonsViewModernProps> = () => {
       setConfirmDialogOpen(false);
       setAddonToDelete(null);
       fetchAddons();
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error deleting addon:", error);
-      showSnackbar("Error deleting addon", "error");
+      const errorMessage =
+        error?.response?.data?.message ||
+        error?.message ||
+        "Error deleting addon";
+      showSnackbar(errorMessage, "error");
     }
   };
 

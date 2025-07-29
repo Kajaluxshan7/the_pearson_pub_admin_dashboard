@@ -28,7 +28,10 @@ import {
 
 const StyledTableCell = styled(TableCell)(({ theme }) => ({
   fontWeight: 600,
-  backgroundColor: theme.palette.grey[50],
+  backgroundColor:
+    theme.palette.mode === "dark"
+      ? theme.palette.grey[800]
+      : theme.palette.grey[50],
   color: theme.palette.text.primary,
   borderBottom: `2px solid ${theme.palette.divider}`,
   fontSize: "0.875rem",

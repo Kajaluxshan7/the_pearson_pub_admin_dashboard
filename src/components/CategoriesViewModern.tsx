@@ -168,9 +168,13 @@ export const CategoriesView: React.FC = () => {
       await categoryService.delete(category.id);
       showSnackbar(`Category ${category.name} deleted successfully`, "success");
       fetchCategories();
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error deleting category:", error);
-      showSnackbar("Error deleting category", "error");
+      const errorMessage =
+        error?.response?.data?.message ||
+        error?.message ||
+        "Error deleting category";
+      showSnackbar(errorMessage, "error");
     } finally {
       setConfirmDialog({ ...confirmDialog, open: false });
     }
