@@ -356,6 +356,82 @@ export const ItemsView: React.FC = () => {
     setImageFiles([]);
     setImagePreviews([]);
   };
+
+  // Image handling functions
+  const handleImageSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(event.target.files || []);
+
+    // Validate file count (max 5 total including existing)
+    if (files.length + formData.images.length + imageFiles.length > 5) {
+      showSnackbar("Maximum 5 images allowed", "error");
+      return;
+    }
+
+    // Validate each file
+    for (const file of files) {
+      if (file.size > 1024 * 1024) {
+        showSnackbar(`File ${file.name} exceeds 1MB limit`, "error");
+        return;
+      }
+
+      const allowedTypes = [
+        "image/jpeg",
+        "image/jpg",
+        "image/png",
+        "image/gif",
+        "image/webp",
+      ];
+      if (!allowedTypes.includes(file.type)) {
+        showSnackbar(`File ${file.name} is not a valid image type`, "error");
+        return;
+      }
+    }
+
+    // Add files and create previews
+    setImageFiles((prev) => [...prev, ...files]);
+
+    // Create preview URLs
+    files.forEach((file) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setImagePreviews((prev) => [...prev, e.target?.result as string]);
+      };
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const removeImagePreview = (index: number) => {
+    setImageFiles((prev) => prev.filter((_, i) => i !== index));
+    setImagePreviews((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const removeExistingImage = async (imageUrl: string, index: number) => {
+    try {
+      // Remove from the backend (this will delete from S3)
+      await itemService.deleteImage(imageUrl);
+
+      // Remove from form data
+      setFormData((prev) => ({
+        ...prev,
+        images: prev.images.filter((_, i) => i !== index),
+      }));
+
+      showSnackbar("Image removed successfully", "success");
+    } catch (error) {
+      console.error("Error removing image:", error);
+      showSnackbar("Error removing image", "error");
+    }
+  };
+
+  const uploadImages = async (files: File[]): Promise<string[]> => {
+    try {
+      const result = await itemService.uploadImages(files);
+      return result.imageUrls || [];
+    } catch (error) {
+      console.error("Error uploading images:", error);
+      throw new Error("Failed to upload images");
+    }
+  };
   const columns = [
     {
       id: "name",
@@ -625,149 +701,7 @@ export const ItemsView: React.FC = () => {
     }
   };
 
-  // Image handling functions
-  const handleImageSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const files = event.target.files;
-    if (!files) return;
-
-    const newFiles = Array.from(files);
-
-    // Validate total number of images (existing + new)
-    if (imageFiles.length + newFiles.length > 5) {
-      setSnackbar({
-        open: true,
-        message: "Maximum 5 images allowed",
-        severity: "error",
-      });
-      return;
-    }
-
-    // Validate each file
-    const validFiles: File[] = [];
-    const errors: string[] = [];
-
-    for (const file of newFiles) {
-      // Check file size (1MB max)
-      if (file.size > 1024 * 1024) {
-        errors.push(`${file.name} exceeds 1MB limit`);
-        continue;
-      }
-
-      // Check file type
-      const allowedTypes = [
-        "image/jpeg",
-        "image/jpg",
-        "image/png",
-        "image/gif",
-        "image/webp",
-      ];
-      if (!allowedTypes.includes(file.type)) {
-        errors.push(
-          `${file.name} is not a valid image type (allowed: JPEG, PNG, GIF, WebP)`
-        );
-        continue;
-      }
-
-      validFiles.push(file);
-    }
-
-    // Show validation errors if any
-    if (errors.length > 0) {
-      setSnackbar({
-        open: true,
-        message: errors.join(", "),
-        severity: "error",
-      });
-    }
-
-    // Process valid files
-    if (validFiles.length > 0) {
-      const newPreviews: string[] = [];
-      let processedCount = 0;
-
-      validFiles.forEach((file) => {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          newPreviews.push(e.target?.result as string);
-          processedCount++;
-
-          if (processedCount === validFiles.length) {
-            setImageFiles((prev) => [...prev, ...validFiles]);
-            setImagePreviews((prev) => [...prev, ...newPreviews]);
-
-            if (validFiles.length > 0) {
-              setSnackbar({
-                open: true,
-                message: `${validFiles.length} image(s) selected successfully`,
-                severity: "success",
-              });
-            }
-          }
-        };
-        reader.readAsDataURL(file);
-      });
-    }
-
-    // Clear the input
-    event.target.value = "";
-  };
-
-  const uploadImages = async (files: File[]): Promise<string[]> => {
-    if (files.length === 0) return [];
-
-    // Validate number of files
-    if (files.length > 5) {
-      throw new Error("Maximum 5 images allowed");
-    }
-
-    // Validate each file
-    for (const file of files) {
-      // Check file size (1MB max)
-      if (file.size > 1024 * 1024) {
-        throw new Error(`File ${file.name} exceeds 1MB limit`);
-      }
-
-      // Check file type
-      const allowedTypes = [
-        "image/jpeg",
-        "image/jpg",
-        "image/png",
-        "image/gif",
-        "image/webp",
-      ];
-      if (!allowedTypes.includes(file.type)) {
-        throw new Error(`File ${file.name} is not a valid image type`);
-      }
-    }
-
-    try {
-      const result = await itemService.uploadImages(files);
-      // Use signed URLs if available for better security
-      return result.signedUrls || result.imageUrls || [];
-    } catch (error) {
-      console.error("Error uploading images:", error);
-      throw error;
-    }
-  };
-
-  const removeImagePreview = (index: number) => {
-    setImageFiles((prev) => prev.filter((_, i) => i !== index));
-    setImagePreviews((prev) => prev.filter((_, i) => i !== index));
-  };
-
-  const removeExistingImage = async (imageUrl: string, index: number) => {
-    try {
-      await itemService.deleteImage(imageUrl);
-      setFormData((prev) => ({
-        ...prev,
-        images: prev.images.filter((_, i) => i !== index),
-      }));
-      showSnackbar("Image removed successfully", "success");
-    } catch (error) {
-      console.error("Error removing image:", error);
-      showSnackbar("Error removing image", "error");
-    }
-  };
+  // ...existing code...
 
   return (
     <motion.div

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   Box,
   Typography,
@@ -53,6 +53,7 @@ import {
   type SpecialsDay,
 } from "../services/api";
 import { ConfirmDialog } from "./ConfirmDialog";
+import { AdminTimeUtil } from "../utils/timezone-luxon";
 
 interface SpecialsFormData {
   special_type: "daily" | "seasonal" | "latenight" | "";
@@ -130,10 +131,32 @@ export const SpecialsView: React.FC = () => {
     onConfirm: () => {},
   });
 
+  const fetchSpecials = useCallback(async () => {
+    try {
+      setLoading(true);
+      const response = await specialsService.getAll(1, 100);
+      setSpecials(response.data);
+    } catch (error) {
+      console.error("Error fetching specials:", error);
+      showSnackbar("Error fetching specials", "error");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const fetchSpecialsDays = useCallback(async () => {
+    try {
+      const response = await specialsDayService.getAll(1, 100);
+      setSpecialsDays(response.data);
+    } catch (error) {
+      console.error("Error fetching specials days:", error);
+    }
+  }, []);
+
   useEffect(() => {
     fetchSpecials();
     fetchSpecialsDays();
-  }, []);
+  }, [fetchSpecials, fetchSpecialsDays]);
 
   useEffect(() => {
     let filtered = specials;
@@ -176,7 +199,7 @@ export const SpecialsView: React.FC = () => {
         );
       }, 3000); // Change image every 3 seconds
 
-      setAutoSwapInterval(interval);
+  setAutoSwapInterval(Number(interval));
 
       return () => {
         if (interval) clearInterval(interval);
@@ -187,7 +210,7 @@ export const SpecialsView: React.FC = () => {
         setAutoSwapInterval(null);
       }
     }
-  }, [autoSwapEnabled, selectedSpecial?.image_urls]);
+  }, [autoSwapEnabled, selectedSpecial?.image_urls, autoSwapInterval]);
 
   // Reset image gallery when dialog opens/closes
   useEffect(() => {
@@ -201,29 +224,11 @@ export const SpecialsView: React.FC = () => {
         setAutoSwapInterval(null);
       }
     }
-  }, [viewDialogOpen]);
+  }, [viewDialogOpen, autoSwapInterval]);
 
-  const fetchSpecials = async () => {
-    try {
-      setLoading(true);
-      const response = await specialsService.getAll(1, 100);
-      setSpecials(response.data);
-    } catch (error) {
-      console.error("Error fetching specials:", error);
-      showSnackbar("Error fetching specials", "error");
-    } finally {
-      setLoading(false);
-    }
-  };
+  // ...existing code...
 
-  const fetchSpecialsDays = async () => {
-    try {
-      const response = await specialsDayService.getAll(1, 100);
-      setSpecialsDays(response.data);
-    } catch (error) {
-      console.error("Error fetching specials days:", error);
-    }
-  };
+  // ...existing code...
 
   const showSnackbar = (
     message: string,
@@ -267,10 +272,10 @@ export const SpecialsView: React.FC = () => {
       name: special.season_name || "", // Use season_name for seasonal specials
       description: special.description || "",
       seasonal_start_date: special.seasonal_start_datetime
-        ? new Date(special.seasonal_start_datetime).toISOString().slice(0, 16) // datetime-local format
+        ? AdminTimeUtil.formatForDateTimeInput(special.seasonal_start_datetime) // Toronto timezone format
         : "",
       seasonal_end_date: special.seasonal_end_datetime
-        ? new Date(special.seasonal_end_datetime).toISOString().slice(0, 16) // datetime-local format
+        ? AdminTimeUtil.formatForDateTimeInput(special.seasonal_end_datetime) // Toronto timezone format
         : "",
       images: existingImages, // Show existing images
       removeImages: [], // Initialize empty array for images to remove
@@ -350,7 +355,7 @@ export const SpecialsView: React.FC = () => {
         existingImages: existingImagesToKeep, // Include array of existing images to keep
       };
 
-      let saveData: any;
+  let saveData: Partial<Special>;
 
       if (formData.special_type === "daily") {
         saveData = {
@@ -362,10 +367,10 @@ export const SpecialsView: React.FC = () => {
           ...baseData,
           season_name: formData.name,
           seasonal_start_datetime: formData.seasonal_start_date
-            ? new Date(formData.seasonal_start_date).toISOString()
+            ? AdminTimeUtil.parseFromDateTimeInput(formData.seasonal_start_date)
             : undefined,
           seasonal_end_datetime: formData.seasonal_end_date
-            ? new Date(formData.seasonal_end_date).toISOString()
+            ? AdminTimeUtil.parseFromDateTimeInput(formData.seasonal_end_date)
             : undefined,
         };
       } else if (formData.special_type === "latenight") {

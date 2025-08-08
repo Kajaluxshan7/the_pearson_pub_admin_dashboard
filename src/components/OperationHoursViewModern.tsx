@@ -264,21 +264,31 @@ const OperationHoursViewModern: React.FC<OperationHoursViewModernProps> = ({
 
   const formatTime = (time: string) => {
     if (!time) return "Not set";
-    const [hours, minutes] = time.split(":");
-    const hour = parseInt(hours, 10);
-    const ampm = hour >= 12 ? "PM" : "AM";
-    const displayHour = hour % 12 || 12;
-    return `${displayHour}:${minutes} ${ampm}`;
+    try {
+      const [hours, minutes] = time.split(":");
+      const hour = parseInt(hours, 10);
+      const ampm = hour >= 12 ? "PM" : "AM";
+      const displayHour = hour % 12 || 12;
+
+      return `${displayHour}:${minutes} ${ampm}`;
+    } catch (error) {
+      console.error("Error formatting time:", error);
+      return time;
+    }
   };
 
-  // Utility function to check if currently open
+  // Utility function to check if currently open using Toronto timezone
   const isCurrentlyOpen = (
     day: string,
     openTime: string,
     closeTime: string
   ) => {
     const now = new Date();
-    const currentTime = now.toTimeString().slice(0, 5); // HH:MM format
+    // Get current time in Toronto timezone
+    const torontoTime = new Date(
+      now.toLocaleString("en-US", { timeZone: "America/Toronto" })
+    );
+    const currentTime = torontoTime.toTimeString().slice(0, 5); // HH:MM format
 
     // Map JavaScript day to our day format
     const days = [
@@ -290,12 +300,7 @@ const OperationHoursViewModern: React.FC<OperationHoursViewModernProps> = ({
       "friday",
       "saturday",
     ];
-    const todayDay = days[now.getDay()];
-
-    // Check if it's the correct day
-    if (day.toLowerCase() !== todayDay) {
-      return false;
-    }
+    const todayDay = days[torontoTime.getDay()];
 
     // Convert times to minutes for comparison
     const timeToMinutes = (time: string) => {
@@ -307,9 +312,37 @@ const OperationHoursViewModern: React.FC<OperationHoursViewModernProps> = ({
     const openMinutes = timeToMinutes(openTime);
     const closeMinutes = timeToMinutes(closeTime);
 
-    // Handle overnight hours (e.g., open until 2 AM next day)
+    // Handle overnight hours (e.g., Saturday 8:30 PM to Sunday 11:30 AM)
     if (closeMinutes < openMinutes) {
-      return currentMinutes >= openMinutes || currentMinutes <= closeMinutes;
+      // Check if we're on the day that starts the overnight shift
+      if (day.toLowerCase() === todayDay && currentMinutes >= openMinutes) {
+        return true;
+      }
+
+      // Check if we're on the next day before closing time
+      const dayNames = [
+        "sunday",
+        "monday",
+        "tuesday",
+        "wednesday",
+        "thursday",
+        "friday",
+        "saturday",
+      ];
+      const dayIndex = dayNames.indexOf(day.toLowerCase());
+      const nextDayIndex = (dayIndex + 1) % 7;
+      const nextDay = dayNames[nextDayIndex];
+
+      if (todayDay === nextDay && currentMinutes <= closeMinutes) {
+        return true;
+      }
+
+      return false;
+    }
+
+    // Regular hours (same day) - check if it's the correct day
+    if (day.toLowerCase() !== todayDay) {
+      return false;
     }
 
     return currentMinutes >= openMinutes && currentMinutes <= closeMinutes;
@@ -403,13 +436,29 @@ const OperationHoursViewModern: React.FC<OperationHoursViewModernProps> = ({
       id: "created_at",
       label: "Created",
       minWidth: 150,
-      format: (value: any) => new Date(value).toLocaleDateString(),
+      format: (value: any) =>
+        new Date(value).toLocaleDateString("en-CA", {
+          year: "numeric",
+          month: "short",
+          day: "numeric",
+          hour: "2-digit",
+          minute: "2-digit",
+          timeZone: "America/Toronto",
+        }),
     },
     {
       id: "updated_at",
       label: "Last Updated",
       minWidth: 150,
-      format: (value: any) => new Date(value).toLocaleDateString(),
+      format: (value: any) =>
+        new Date(value).toLocaleDateString("en-CA", {
+          year: "numeric",
+          month: "short",
+          day: "numeric",
+          hour: "2-digit",
+          minute: "2-digit",
+          timeZone: "America/Toronto",
+        }),
     },
   ];
 
@@ -829,12 +878,13 @@ const OperationHoursViewModern: React.FC<OperationHoursViewModernProps> = ({
                     <Typography variant="body1" fontWeight={500}>
                       {new Date(
                         selectedOperationHour.created_at
-                      ).toLocaleDateString("en-US", {
+                      ).toLocaleDateString("en-CA", {
                         year: "numeric",
                         month: "long",
                         day: "numeric",
                         hour: "2-digit",
                         minute: "2-digit",
+                        timeZone: "America/Toronto",
                       })}
                     </Typography>
                   </Box>
@@ -851,12 +901,13 @@ const OperationHoursViewModern: React.FC<OperationHoursViewModernProps> = ({
                     <Typography variant="body1" fontWeight={500}>
                       {new Date(
                         selectedOperationHour.updated_at
-                      ).toLocaleDateString("en-US", {
+                      ).toLocaleDateString("en-CA", {
                         year: "numeric",
                         month: "long",
                         day: "numeric",
                         hour: "2-digit",
                         minute: "2-digit",
+                        timeZone: "America/Toronto",
                       })}
                     </Typography>
                   </Box>

@@ -107,8 +107,8 @@ const AppContent: React.FC<{
 
   const checkAuthStatus = async () => {
     try {
-      const response = await fetch("http://15.223.253.194:5000/auth/profile", {
-      // const response = await fetch("http://localhost:5000/auth/profile", {
+      // const response = await fetch("http://15.223.253.194:5000/auth/profile", {
+      const response = await fetch("http://localhost:5000/auth/profile", {
         method: "GET",
         credentials: "include", // Include cookies
       });

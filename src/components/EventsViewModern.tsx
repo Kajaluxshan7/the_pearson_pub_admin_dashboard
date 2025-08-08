@@ -33,6 +33,7 @@ import { eventService } from "../services/api";
 import type { Event, PaginatedResponse } from "../services/api";
 import { ModernTable } from "./ModernTables";
 import { ConfirmDialog } from "./ConfirmDialog";
+import { AdminTimeUtil } from "../utils/timezone-luxon";
 
 interface EventsViewModernProps {
   userRole: "admin" | "superadmin";
@@ -147,8 +148,8 @@ const EventsViewModern: React.FC<EventsViewModernProps> = ({ userRole }) => {
       await eventService.create({
         name: formData.name,
         description: formData.description,
-        start_date: formData.start_date,
-        end_date: formData.end_date,
+        start_date: AdminTimeUtil.parseFromDateTimeInput(formData.start_date),
+        end_date: AdminTimeUtil.parseFromDateTimeInput(formData.end_date),
         images: allImageUrls,
       });
       setIsAddModalOpen(false);
@@ -178,8 +179,8 @@ const EventsViewModern: React.FC<EventsViewModernProps> = ({ userRole }) => {
       await eventService.update(selectedEvent.id, {
         name: formData.name,
         description: formData.description,
-        start_date: formData.start_date,
-        end_date: formData.end_date,
+        start_date: AdminTimeUtil.parseFromDateTimeInput(formData.start_date),
+        end_date: AdminTimeUtil.parseFromDateTimeInput(formData.end_date),
         images: allImageUrls,
       });
       setIsEditModalOpen(false);
@@ -368,13 +369,12 @@ const EventsViewModern: React.FC<EventsViewModernProps> = ({ userRole }) => {
   const openEditModal = (event: Event) => {
     console.log("📝 Opening edit modal for event:", event);
     setSelectedEvent(event);
-    // Format datetime for datetime-local input (YYYY-MM-DDTHH:MM)
-    const startDateTime = event.start_date.includes("T")
-      ? event.start_date.substring(0, 16)
-      : event.start_date + "T00:00";
-    const endDateTime = event.end_date.includes("T")
-      ? event.end_date.substring(0, 16)
-      : event.end_date + "T00:00";
+
+    // Convert UTC dates from API to Toronto timezone for datetime-local inputs
+    const startDateTime = AdminTimeUtil.formatForDateTimeInput(
+      event.start_date
+    );
+    const endDateTime = AdminTimeUtil.formatForDateTimeInput(event.end_date);
 
     setFormData({
       name: event.name,
@@ -845,6 +845,15 @@ const EventsViewModern: React.FC<EventsViewModernProps> = ({ userRole }) => {
                 />
               </Box>
 
+              <Typography
+                variant="caption"
+                color="text.secondary"
+                sx={{ mt: 1, fontStyle: "italic" }}
+              >
+                All times are in America/Toronto timezone (automatically handles
+                DST)
+              </Typography>
+
               {/* Image Upload Section */}
               <Box sx={{ mt: 2 }}>
                 <Typography variant="subtitle2" sx={{ mb: 2 }}>
@@ -1141,15 +1150,17 @@ const EventsViewModern: React.FC<EventsViewModernProps> = ({ userRole }) => {
                           fontWeight={600}
                           color="primary.main"
                         >
-                          {new Date(
-                            selectedEvent.start_date
-                          ).toLocaleDateString("en-US", {
-                            year: "numeric",
-                            month: "long",
-                            day: "numeric",
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          })}
+                          {AdminTimeUtil.formatToronto(
+                            selectedEvent.start_date,
+                            "MMMM d, yyyy h:mm a"
+                          )}{" "}
+                          (
+                          {
+                            AdminTimeUtil.getTimezoneInfo(
+                              selectedEvent.start_date
+                            ).abbreviation
+                          }
+                          )
                         </Typography>
                       </Box>
 
@@ -1167,16 +1178,17 @@ const EventsViewModern: React.FC<EventsViewModernProps> = ({ userRole }) => {
                           fontWeight={600}
                           color="secondary.main"
                         >
-                          {new Date(selectedEvent.end_date).toLocaleDateString(
-                            "en-US",
-                            {
-                              year: "numeric",
-                              month: "long",
-                              day: "numeric",
-                              hour: "2-digit",
-                              minute: "2-digit",
-                            }
-                          )}
+                          {AdminTimeUtil.formatToronto(
+                            selectedEvent.end_date,
+                            "MMMM d, yyyy h:mm a"
+                          )}{" "}
+                          (
+                          {
+                            AdminTimeUtil.getTimezoneInfo(
+                              selectedEvent.end_date
+                            ).abbreviation
+                          }
+                          )
                         </Typography>
                       </Box>
                     </Paper>
