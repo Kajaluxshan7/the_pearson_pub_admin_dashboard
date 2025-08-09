@@ -151,7 +151,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({
     try {
       // Redirect to Google OAuth endpoint
       const backendUrl =
-        import.meta.env.VITE_API_URL || "http://localhost:5000";
+        import.meta.env.VITE_API_URL || "http://15.223.253.194:5000";
       window.location.href = `${backendUrl}/auth/google`;
     } catch (error: any) {
       console.error("Google login error:", error);
