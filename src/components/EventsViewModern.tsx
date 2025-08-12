@@ -14,8 +14,6 @@ import {
   Card,
   CardContent,
   useTheme,
-  Snackbar,
-  Alert,
 } from "@mui/material";
 import Grid from "@mui/material/GridLegacy";
 import {
@@ -34,6 +32,7 @@ import type { Event, PaginatedResponse } from "../services/api";
 import { ModernTable } from "./ModernTables";
 import { ConfirmDialog } from "./ConfirmDialog";
 import { AdminTimeUtil } from "../utils/timezone-luxon";
+import { useNotification } from "../hooks/useNotification";
 
 interface EventsViewModernProps {
   userRole: "admin" | "superadmin";
@@ -41,6 +40,7 @@ interface EventsViewModernProps {
 
 const EventsViewModern: React.FC<EventsViewModernProps> = ({ userRole }) => {
   const theme = useTheme();
+  const { showError, showSuccess, } = useNotification();
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
   const [totalCount, setTotalCount] = useState(0);
@@ -80,26 +80,9 @@ const EventsViewModern: React.FC<EventsViewModernProps> = ({ userRole }) => {
     end_date: "",
   });
 
-  // Feedback states
-  const [snackbar, setSnackbar] = useState<{
-    open: boolean;
-    message: string;
-    severity: "success" | "error";
-  }>({
-    open: false,
-    message: "",
-    severity: "success",
-  });
+  // Remove legacy snackbar state - now using useNotification
 
-  useEffect(() => {
-    fetchEvents();
-  }, [paginationModel, searchTerm, startDate, endDate]);
-
-  useEffect(() => {
-    fetchEventCount();
-  }, []);
-
-  const fetchEvents = async () => {
+  const fetchEvents = React.useCallback(async () => {
     try {
       setLoading(true);
       const dateRange =
@@ -114,24 +97,31 @@ const EventsViewModern: React.FC<EventsViewModernProps> = ({ userRole }) => {
       setTotalCount(response.total);
     } catch (error) {
       console.error("Error fetching events:", error);
-      showAlert("error", "Failed to fetch events");
+      showError(error as Error);
     } finally {
       setLoading(false);
     }
-  };
+  }, [paginationModel.page, paginationModel.pageSize, searchTerm, startDate, endDate, showError]);
 
-  const fetchEventCount = async () => {
+  useEffect(() => {
+    fetchEvents();
+  }, [fetchEvents]);
+
+  const fetchEventCount = React.useCallback(async () => {
     try {
       const count = await eventService.getCount();
       setTotalCount(count);
     } catch (error) {
       console.error("Error fetching event count:", error);
+      showError(error as Error);
     }
-  };
+  }, [showError]);
 
-  const showAlert = (severity: "success" | "error", message: string) => {
-    setSnackbar({ open: true, message, severity });
-  };
+  useEffect(() => {
+    fetchEventCount();
+  }, [fetchEventCount]);
+
+  // Remove legacy showAlert function - now using useNotification exclusively
 
   const handleAddEvent = async () => {
     try {
@@ -156,10 +146,10 @@ const EventsViewModern: React.FC<EventsViewModernProps> = ({ userRole }) => {
       resetForm();
       fetchEvents();
       fetchEventCount();
-      showAlert("success", "Event created successfully");
+      showSuccess("Event created successfully");
     } catch (error) {
       console.error("Error creating event:", error);
-      showAlert("error", "Failed to create event");
+      showError(error as Error);
     }
   };
 
@@ -186,10 +176,10 @@ const EventsViewModern: React.FC<EventsViewModernProps> = ({ userRole }) => {
       setIsEditModalOpen(false);
       resetForm();
       fetchEvents();
-      showAlert("success", "Event updated successfully");
+      showSuccess("Event updated successfully");
     } catch (error) {
       console.error("Error updating event:", error);
-      showAlert("error", "Failed to update event");
+      showError(error as Error);
     }
   };
   const handleDeleteEvent = (event: Event) => {
@@ -204,12 +194,12 @@ const EventsViewModern: React.FC<EventsViewModernProps> = ({ userRole }) => {
       await eventService.delete(eventToDelete.id);
       fetchEvents();
       fetchEventCount();
-      showAlert("success", "Event deleted successfully");
+      showSuccess("Event deleted successfully");
       setConfirmDeleteOpen(false);
       setEventToDelete(null);
     } catch (error) {
       console.error("Error deleting event:", error);
-      showAlert("error", "Failed to delete event");
+      showError(error as Error);
     }
   };
 
@@ -235,7 +225,7 @@ const EventsViewModern: React.FC<EventsViewModernProps> = ({ userRole }) => {
 
     // Validate total number of images (existing + new)
     if (imageFiles.length + newFiles.length > 5) {
-      showAlert("error", "Maximum 5 images allowed");
+      showError(new Error("Maximum 5 images allowed"));
       return;
     }
 
@@ -270,7 +260,7 @@ const EventsViewModern: React.FC<EventsViewModernProps> = ({ userRole }) => {
 
     // Show validation errors if any
     if (errors.length > 0) {
-      showAlert("error", errors.join(", "));
+      showError(new Error(errors.join(", ")));
     }
 
     // Process valid files
@@ -289,10 +279,7 @@ const EventsViewModern: React.FC<EventsViewModernProps> = ({ userRole }) => {
             setImagePreviews((prev) => [...prev, ...newPreviews]);
 
             if (validFiles.length > 0) {
-              showAlert(
-                "success",
-                `${validFiles.length} image(s) selected successfully`
-              );
+              showSuccess(`${validFiles.length} image(s) selected successfully`);
             }
           }
         };
@@ -354,10 +341,10 @@ const EventsViewModern: React.FC<EventsViewModernProps> = ({ userRole }) => {
         ...prev,
         images: prev.images.filter((_, i) => i !== index),
       }));
-      showAlert("success", "Image removed successfully");
+      showSuccess("Image removed successfully");
     } catch (error) {
       console.error("Error removing image:", error);
-      showAlert("error", "Failed to remove image");
+      showError(error as Error);
     }
   };
 
@@ -423,17 +410,14 @@ const EventsViewModern: React.FC<EventsViewModernProps> = ({ userRole }) => {
         start_date: rescheduleData.start_date,
         end_date: rescheduleData.end_date,
       });
-      showAlert(
-        "success",
-        `Event "${selectedEvent.name}" has been rescheduled`
-      );
+      showSuccess(`Event "${selectedEvent.name}" has been rescheduled`);
       setIsRescheduleModalOpen(false);
       setSelectedEvent(null);
       setRescheduleData({ start_date: "", end_date: "" });
       fetchEvents();
     } catch (error) {
       console.error("Error rescheduling event:", error);
-      showAlert("error", "Failed to reschedule event");
+      showError(error as Error);
     }
   };
 
@@ -461,7 +445,7 @@ const EventsViewModern: React.FC<EventsViewModernProps> = ({ userRole }) => {
       id: "name",
       label: "Event Name",
       minWidth: 200,
-      format: (value: any) => (
+      format: (value: string) => (
         <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
           <EventIcon sx={{ fontSize: 20, color: "primary.main" }} />
           <Typography variant="body2" fontWeight={600}>
@@ -474,7 +458,7 @@ const EventsViewModern: React.FC<EventsViewModernProps> = ({ userRole }) => {
       id: "description",
       label: "Description",
       minWidth: 300,
-      format: (value: any) => (
+      format: (value: string | undefined) => (
         <Typography
           variant="body2"
           color="text.secondary"
@@ -495,7 +479,7 @@ const EventsViewModern: React.FC<EventsViewModernProps> = ({ userRole }) => {
       id: "start_date",
       label: "Start Date",
       minWidth: 150,
-      format: (value: any) => (
+      format: (value: string) => (
         <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
           <CalendarToday sx={{ fontSize: 16, color: "success.main" }} />
           <Typography variant="body2">
@@ -508,7 +492,7 @@ const EventsViewModern: React.FC<EventsViewModernProps> = ({ userRole }) => {
       id: "end_date",
       label: "End Date",
       minWidth: 150,
-      format: (value: any) => (
+      format: (value: string) => (
         <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
           <CalendarToday sx={{ fontSize: 16, color: "error.main" }} />
           <Typography variant="body2">
@@ -521,7 +505,7 @@ const EventsViewModern: React.FC<EventsViewModernProps> = ({ userRole }) => {
       id: "status",
       label: "Status",
       minWidth: 120,
-      format: (_: any, row: any) => {
+      format: (_: string, row: Event) => {
         const status = getEventStatus(row.start_date, row.end_date);
         return (
           <Chip
@@ -537,7 +521,7 @@ const EventsViewModern: React.FC<EventsViewModernProps> = ({ userRole }) => {
       id: "images",
       label: "Images",
       minWidth: 100,
-      format: (value: any) => (
+      format: (value: string[] | undefined) => (
         <Chip
           label={`${value?.length || 0} images`}
           size="small"
@@ -550,7 +534,7 @@ const EventsViewModern: React.FC<EventsViewModernProps> = ({ userRole }) => {
       id: "created_at",
       label: "Created",
       minWidth: 150,
-      format: (value: any) => new Date(value).toLocaleDateString(),
+      format: (value: string | number | Date) => new Date(value).toLocaleDateString(),
     },
   ];
 
@@ -564,11 +548,11 @@ const EventsViewModern: React.FC<EventsViewModernProps> = ({ userRole }) => {
       };
 
       await eventService.update(event.id, updatedEvent);
-      showAlert("success", `Event "${event.name}" has been started`);
+      showSuccess(`Event "${event.name}" has been started`);
       fetchEvents();
     } catch (error) {
       console.error("Error starting event:", error);
-      showAlert("error", "Failed to start event");
+      showError(error as Error);
     }
   };
 
@@ -582,11 +566,11 @@ const EventsViewModern: React.FC<EventsViewModernProps> = ({ userRole }) => {
       };
 
       await eventService.update(event.id, updatedEvent);
-      showAlert("success", `Event "${event.name}" has been ended`);
+      showSuccess(`Event "${event.name}" has been ended`);
       fetchEvents();
     } catch (error) {
       console.error("Error ending event:", error);
-      showAlert("error", "Failed to end event");
+      showError(error as Error);
     }
   };
 
@@ -1388,21 +1372,7 @@ const EventsViewModern: React.FC<EventsViewModernProps> = ({ userRole }) => {
             </Button>
           </DialogActions>
         </Dialog>
-        {/* Snackbar for notifications */}
-        <Snackbar
-          open={snackbar.open}
-          autoHideDuration={5000}
-          onClose={() => setSnackbar({ ...snackbar, open: false })}
-          anchorOrigin={{ vertical: "bottom", horizontal: "left" }}
-        >
-          <Alert
-            onClose={() => setSnackbar({ ...snackbar, open: false })}
-            severity={snackbar.severity}
-            sx={{ width: "100%" }}
-          >
-            {snackbar.message}
-          </Alert>
-        </Snackbar>
+        {/* Snackbar removed: now using notification system via useNotification */}
       </Paper>
     </motion.div>
   );

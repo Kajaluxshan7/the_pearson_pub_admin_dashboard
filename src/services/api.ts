@@ -31,9 +31,61 @@ api.interceptors.response.use(
       }
       // For login requests, let the component handle the error
     }
+
+    // Enhance error object with better messages
+    if (error.response?.data) {
+      error.response.data.userMessage = getUserFriendlyErrorMessage(
+        error.response.data.message || error.message
+      );
+    }
+
     return Promise.reject(error);
   }
 );
+
+// Helper function to convert technical errors to user-friendly messages
+function getUserFriendlyErrorMessage(message: string): string {
+  const lowerMessage = message.toLowerCase();
+
+  if (
+    lowerMessage.includes("duplicate") ||
+    lowerMessage.includes("already exists")
+  ) {
+    return "This item already exists. Please choose a different name.";
+  }
+
+  if (
+    lowerMessage.includes("foreign key") ||
+    lowerMessage.includes("referenced by other records")
+  ) {
+    return "Cannot delete this item because it is being used by other records.";
+  }
+
+  if (lowerMessage.includes("not found")) {
+    return "The requested item was not found.";
+  }
+
+  if (
+    lowerMessage.includes("unauthorized") ||
+    lowerMessage.includes("forbidden")
+  ) {
+    return "You do not have permission to perform this action.";
+  }
+
+  if (
+    lowerMessage.includes("validation") ||
+    lowerMessage.includes("required field")
+  ) {
+    return "Please check all required fields and try again.";
+  }
+
+  if (lowerMessage.includes("network") || lowerMessage.includes("connection")) {
+    return "Network error. Please check your connection and try again.";
+  }
+
+  // Return original message if no pattern matches
+  return message;
+}
 
 export interface PaginatedResponse<T> {
   data: T[];

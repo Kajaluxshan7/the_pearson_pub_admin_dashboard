@@ -5,8 +5,6 @@ import {
   Paper,
   Button,
   useTheme,
-  Snackbar,
-  Alert,
   TextField,
   FormControl,
   InputLabel,
@@ -38,6 +36,7 @@ import {
 } from "../services/api";
 import { ModernTable } from "./ModernTables";
 import { ConfirmDialog } from "./ConfirmDialog";
+import { useNotification } from "../hooks/useNotification";
 
 interface AddonsViewModernProps {
   userRole: "admin" | "superadmin";
@@ -45,6 +44,7 @@ interface AddonsViewModernProps {
 
 export const AddonsViewModern: React.FC<AddonsViewModernProps> = () => {
   const theme = useTheme();
+  const { showError, showSuccess, showWarning } = useNotification();
   const [addons, setAddons] = useState<Addon[]>([]);
   const [items, setItems] = useState<Item[]>([]);
   const [loading, setLoading] = useState(true);
@@ -53,11 +53,7 @@ export const AddonsViewModern: React.FC<AddonsViewModernProps> = () => {
   const [pageSize, setPageSize] = useState(5);
   const [searchQuery, setSearchQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
-  const [snackbar, setSnackbar] = useState({
-    open: false,
-    message: "",
-    severity: "success" as "success" | "error" | "info" | "warning",
-  });
+  const [itemFilter, setItemFilter] = useState<string>("all");
 
   const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
   const [addonToDelete, setAddonToDelete] = useState<Addon | null>(null);
@@ -78,7 +74,7 @@ export const AddonsViewModern: React.FC<AddonsViewModernProps> = () => {
   useEffect(() => {
     fetchAddons();
     fetchItems();
-  }, [page, pageSize, categoryFilter]);
+  }, [page, pageSize, categoryFilter, itemFilter]);
 
   // Debounce search query
   useEffect(() => {
@@ -100,13 +96,14 @@ export const AddonsViewModern: React.FC<AddonsViewModernProps> = () => {
       setItems(itemsData);
     } catch (error) {
       console.error("Error fetching items:", error);
+      showError(error as Error);
     }
   };
 
   const fetchAddons = async () => {
     try {
       setLoading(true);
-      const filters: any = {};
+      const filters: Record<string, unknown> = {};
 
       // Only add filters if they have values
       if (searchQuery && searchQuery.trim()) {
@@ -114,6 +111,9 @@ export const AddonsViewModern: React.FC<AddonsViewModernProps> = () => {
       }
       if (categoryFilter && categoryFilter !== "all") {
         filters.category_type = categoryFilter;
+      }
+      if (itemFilter && itemFilter !== "all") {
+        filters.itemId = itemFilter;
       }
 
       const response: PaginatedResponse<Addon> = await addonService.getAll(
@@ -131,7 +131,7 @@ export const AddonsViewModern: React.FC<AddonsViewModernProps> = () => {
       setTotal(totalCount);
     } catch (error) {
       console.error("Error fetching addons:", error);
-      showSnackbar("Error fetching addons", "error");
+      showError(error as Error);
       setAddons([]);
       setTotal(0);
     } finally {
@@ -143,7 +143,10 @@ export const AddonsViewModern: React.FC<AddonsViewModernProps> = () => {
     message: string,
     severity: "success" | "error" | "info" | "warning" = "success"
   ) => {
-    setSnackbar({ open: true, message, severity });
+    // Deprecated - now using useNotification
+    if (severity === "success") showSuccess(message);
+    else if (severity === "error") showError(message);
+    else if (severity === "warning") showWarning(message);
   };
 
   const handleEdit = (addon: Addon) => {
@@ -168,17 +171,13 @@ export const AddonsViewModern: React.FC<AddonsViewModernProps> = () => {
 
     try {
       await addonService.delete(addonToDelete.id);
-      showSnackbar("Addon deleted successfully", "success");
+      showSuccess(`Addon "${addonToDelete.name}" deleted successfully`);
       setConfirmDialogOpen(false);
       setAddonToDelete(null);
       fetchAddons();
-    } catch (error: any) {
+    } catch (error) {
       console.error("Error deleting addon:", error);
-      const errorMessage =
-        error?.response?.data?.message ||
-        error?.message ||
-        "Error deleting addon";
-      showSnackbar(errorMessage, "error");
+      showError(error as Error);
     }
   };
 
@@ -190,17 +189,17 @@ export const AddonsViewModern: React.FC<AddonsViewModernProps> = () => {
   const handleSave = async () => {
     try {
       if (!formData.name.trim()) {
-        showSnackbar("Addon name is required", "error");
+        showWarning("Addon name is required");
         return;
       }
 
       if (!formData.category_type) {
-        showSnackbar("Category type is required", "error");
+        showWarning("Category type is required");
         return;
       }
 
       if (!formData.itemId) {
-        showSnackbar("Item selection is required", "error");
+        showWarning("Item selection is required");
         return;
       }
 
@@ -215,12 +214,12 @@ export const AddonsViewModern: React.FC<AddonsViewModernProps> = () => {
       if (selectedAddon) {
         // Update existing addon
         await addonService.update(selectedAddon.id, addonData);
-        showSnackbar("Addon updated successfully", "success");
+        showSuccess(`Addon "${formData.name}" updated successfully`);
         setEditDialogOpen(false);
       } else {
         // Create new addon
         await addonService.create(addonData);
-        showSnackbar("Addon created successfully", "success");
+        showSuccess(`Addon "${formData.name}" created successfully`);
         setAddDialogOpen(false);
       }
 
@@ -228,7 +227,7 @@ export const AddonsViewModern: React.FC<AddonsViewModernProps> = () => {
       fetchAddons();
     } catch (error) {
       console.error("Error saving addon:", error);
-      showSnackbar("Error saving addon", "error");
+      showError(error as Error);
     }
   };
 
@@ -268,6 +267,11 @@ export const AddonsViewModern: React.FC<AddonsViewModernProps> = () => {
       topping: "#f97316",
     };
     return colors[categoryType] || theme.palette.primary.main;
+  };
+
+  const getItemName = (itemId: string) => {
+    const item = items.find((i) => i.id === itemId);
+    return item ? item.name : "Unknown";
   };
 
   const columns = [
@@ -339,6 +343,23 @@ export const AddonsViewModern: React.FC<AddonsViewModernProps> = () => {
       ),
     },
     {
+      id: "itemId",
+      label: "Item",
+      minWidth: 180,
+      format: (value: string) => (
+        <Chip
+          label={getItemName(value)}
+          size="small"
+          sx={{
+            backgroundColor: theme.palette.info.light + "22",
+            color: theme.palette.info.main,
+            fontWeight: 600,
+            borderRadius: 2,
+          }}
+        />
+      ),
+    },
+    {
       id: "created_at",
       label: "Created",
       minWidth: 120,
@@ -352,6 +373,7 @@ export const AddonsViewModern: React.FC<AddonsViewModernProps> = () => {
 
   const clearFilters = () => {
     setCategoryFilter("all");
+    setItemFilter("all");
     setSearchQuery("");
   };
 
@@ -418,7 +440,7 @@ export const AddonsViewModern: React.FC<AddonsViewModernProps> = () => {
           }}
         >
           <Grid container spacing={2} alignItems="center">
-            <Grid item xs={12} md={5}>
+            <Grid item xs={12} md={4}>
               <TextField
                 fullWidth
                 placeholder="Search addons..."
@@ -440,7 +462,7 @@ export const AddonsViewModern: React.FC<AddonsViewModernProps> = () => {
               />
             </Grid>
 
-            <Grid item xs={12} md={4}>
+            <Grid item xs={12} md={3}>
               <FormControl fullWidth>
                 <InputLabel>Category Type</InputLabel>
                 <Select
@@ -467,6 +489,30 @@ export const AddonsViewModern: React.FC<AddonsViewModernProps> = () => {
             </Grid>
 
             <Grid item xs={12} md={3}>
+              <FormControl fullWidth>
+                <InputLabel>Item</InputLabel>
+                <Select
+                  value={itemFilter}
+                  onChange={(e) => setItemFilter(e.target.value)}
+                  label="Item"
+                  sx={{
+                    borderRadius: 2,
+                    "& .MuiOutlinedInput-notchedOutline": {
+                      borderRadius: 2,
+                    },
+                  }}
+                >
+                  <MenuItem value="all">All Items</MenuItem>
+                  {items.map((item) => (
+                    <MenuItem key={item.id} value={item.id}>
+                      {item.name}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Grid>
+
+            <Grid item xs={12} md={2}>
               <Button
                 fullWidth
                 variant="outlined"
@@ -525,21 +571,6 @@ export const AddonsViewModern: React.FC<AddonsViewModernProps> = () => {
             emptyMessage="No addons found. Try adjusting your search criteria."
           />
         </Box>
-
-        {/* Snackbar */}
-        <Snackbar
-          open={snackbar.open}
-          autoHideDuration={4000}
-          onClose={() => setSnackbar({ ...snackbar, open: false })}
-        >
-          <Alert
-            severity={snackbar.severity}
-            onClose={() => setSnackbar({ ...snackbar, open: false })}
-            sx={{ borderRadius: 2 }}
-          >
-            {snackbar.message}
-          </Alert>
-        </Snackbar>
 
         {/* Add/Edit Dialog */}
         <Dialog
@@ -751,6 +782,23 @@ export const AddonsViewModern: React.FC<AddonsViewModernProps> = () => {
                       fontWeight: 600,
                       borderRadius: 2,
                       textTransform: "capitalize",
+                      mt: 0.5,
+                    }}
+                  />
+                </Grid>
+
+                <Grid item xs={6}>
+                  <Typography variant="subtitle2" color="text.secondary">
+                    Item
+                  </Typography>
+                  <Chip
+                    label={getItemName(selectedAddon.itemId)}
+                    size="small"
+                    sx={{
+                      backgroundColor: theme.palette.info.light + "22",
+                      color: theme.palette.info.main,
+                      fontWeight: 600,
+                      borderRadius: 2,
                       mt: 0.5,
                     }}
                   />

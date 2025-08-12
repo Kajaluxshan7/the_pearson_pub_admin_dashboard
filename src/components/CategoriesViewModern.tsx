@@ -5,8 +5,6 @@ import {
   Paper,
   Button,
   useTheme,
-  Snackbar,
-  Alert,
   TextField,
   Dialog,
   DialogTitle,
@@ -20,11 +18,13 @@ import {
   Search,
   Category as CategoryIcon,
   Description,
+  FilterList,
 } from "@mui/icons-material";
 import { motion } from "framer-motion";
 import { categoryService, type Category } from "../services/api";
 import { ModernTable } from "./ModernTables";
 import { ConfirmDialog } from "./ConfirmDialog";
+import { useNotification } from "../hooks/useNotification";
 
 interface CategoryFormData {
   name: string;
@@ -33,12 +33,14 @@ interface CategoryFormData {
 
 export const CategoriesView: React.FC = () => {
   const theme = useTheme();
+  const { showError, showSuccess, showWarning } = useNotification();
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(0);
   const [pageSize, setPageSize] = useState(5);
   const [searchQuery, setSearchQuery] = useState("");
+  
   // Dialog states
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
@@ -50,11 +52,6 @@ export const CategoriesView: React.FC = () => {
     name: "",
     description: "",
   });
-  const [snackbar, setSnackbar] = useState({
-    open: false,
-    message: "",
-    severity: "success" as "success" | "error" | "info" | "warning",
-  });
 
   // Confirm dialog state
   const [confirmDialog, setConfirmDialog] = useState({
@@ -64,11 +61,9 @@ export const CategoriesView: React.FC = () => {
     onConfirm: () => {},
   });
 
-  useEffect(() => {
-    fetchCategories();
-  }, [page, pageSize, searchQuery]);
+  // Remove legacy snackbar state
 
-  const fetchCategories = async () => {
+  const fetchCategories = React.useCallback(async () => {
     try {
       setLoading(true);
       const response = await categoryService.getAll(
@@ -80,24 +75,23 @@ export const CategoriesView: React.FC = () => {
       setTotal(response.total);
     } catch (error) {
       console.error("Error fetching categories:", error);
-      showSnackbar("Error fetching categories", "error");
+      showError(error as Error);
     } finally {
       setLoading(false);
     }
-  };
+  }, [page, pageSize, searchQuery, showError]);
 
-  const showSnackbar = (
-    message: string,
-    severity: "success" | "error" | "info" | "warning" = "success"
-  ) => {
-    setSnackbar({ open: true, message, severity });
-  };
+  useEffect(() => {
+    fetchCategories();
+  }, [page, pageSize, searchQuery, fetchCategories]);
+
+  // Removed legacy showSnackbar function, now using useNotification exclusively
   const columns = [
     {
       id: "name",
       label: "Category Name",
       minWidth: 200,
-      format: (value: any) => (
+      format: (value: string) => (
         <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
           <CategoryIcon sx={{ fontSize: 20, color: "primary.main" }} />
           <Typography variant="body2" fontWeight={600}>
@@ -110,7 +104,7 @@ export const CategoriesView: React.FC = () => {
       id: "description",
       label: "Description",
       minWidth: 300,
-      format: (value: any) => (
+      format: (value: string | undefined) => (
         <Typography
           variant="body2"
           color="text.secondary"
@@ -128,7 +122,7 @@ export const CategoriesView: React.FC = () => {
       id: "lastEditedByAdmin",
       label: "Last Edited By",
       minWidth: 180,
-      format: (value: any) => (
+      format: (value: { email?: string } | null | undefined) => (
         <Typography variant="body2" color="text.secondary">
           {value?.email || "System"}
         </Typography>
@@ -138,7 +132,7 @@ export const CategoriesView: React.FC = () => {
       id: "updated_at",
       label: "Last Updated",
       minWidth: 130,
-      format: (value: any) => new Date(value).toLocaleDateString(),
+      format: (value: string | number | Date) => new Date(value).toLocaleDateString(),
     },
   ];
   const handleView = (category: Category) => {
@@ -166,15 +160,11 @@ export const CategoriesView: React.FC = () => {
   const confirmDelete = async (category: Category) => {
     try {
       await categoryService.delete(category.id);
-      showSnackbar(`Category ${category.name} deleted successfully`, "success");
+      showSuccess(`Category "${category.name}" deleted successfully`);
       fetchCategories();
-    } catch (error: any) {
+    } catch (error) {
       console.error("Error deleting category:", error);
-      const errorMessage =
-        error?.response?.data?.message ||
-        error?.message ||
-        "Error deleting category";
-      showSnackbar(errorMessage, "error");
+      showError(error as Error);
     } finally {
       setConfirmDialog({ ...confirmDialog, open: false });
     }
@@ -182,35 +172,48 @@ export const CategoriesView: React.FC = () => {
 
   const handleAddCategory = async () => {
     try {
+      if (!formData.name.trim()) {
+        showWarning("Category name is required");
+        return;
+      }
+      
       await categoryService.create({
         name: formData.name,
         description: formData.description,
       });
-      showSnackbar(`Category ${formData.name} created successfully`, "success");
+      showSuccess(`Category "${formData.name}" created successfully`);
       setAddDialogOpen(false);
       resetForm();
       fetchCategories();
     } catch (error) {
       console.error("Error creating category:", error);
-      showSnackbar("Error creating category", "error");
+      showError(error as Error);
     }
   };
 
   const handleUpdateCategory = async () => {
-    if (!selectedCategory) return;
-
     try {
+      if (!selectedCategory?.id) {
+        showWarning("No category selected for update");
+        return;
+      }
+      
+      if (!formData.name.trim()) {
+        showWarning("Category name is required");
+        return;
+      }
+      
       await categoryService.update(selectedCategory.id, {
         name: formData.name,
         description: formData.description,
       });
-      showSnackbar(`Category ${formData.name} updated successfully`, "success");
+      showSuccess(`Category "${formData.name}" updated successfully`);
       setEditDialogOpen(false);
       resetForm();
       fetchCategories();
     } catch (error) {
       console.error("Error updating category:", error);
-      showSnackbar("Error updating category", "error");
+      showError(error as Error);
     }
   };
 
@@ -268,14 +271,14 @@ export const CategoriesView: React.FC = () => {
             Add Category
           </Button>
         </Box>
-        {/* Search */}
+        {/* Filters */}
         <Paper sx={{ p: 3, mb: 3, borderRadius: 3 }}>
           <Grid container spacing={3} alignItems="center">
-            <Grid item xs={12} md={6}>
+            <Grid item xs={12} md={8}>
               <TextField
                 fullWidth
                 variant="outlined"
-                placeholder="Search categories..."
+                placeholder="Search categories by name or description..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 InputProps={{
@@ -292,13 +295,27 @@ export const CategoriesView: React.FC = () => {
                 }}
               />
             </Grid>
-            <Grid item xs={12} md={6}>
+            <Grid item xs={12} md={2}>
+              <Button
+                fullWidth
+                variant="outlined"
+                startIcon={<FilterList />}
+                onClick={() => setSearchQuery("")}
+                sx={{
+                  borderRadius: 2,
+                  py: 1.5,
+                }}
+              >
+                Clear
+              </Button>
+            </Grid>
+            <Grid item xs={12} md={2}>
               <Typography
                 variant="body2"
                 color="text.secondary"
                 sx={{ textAlign: "right" }}
               >
-                Total Categories: {total}
+                Total: {total}
               </Typography>
             </Grid>
           </Grid>
@@ -479,20 +496,7 @@ export const CategoriesView: React.FC = () => {
             </Button>
           </DialogActions>
         </Dialog>{" "}
-        {/* Snackbar */}
-        <Snackbar
-          open={snackbar.open}
-          autoHideDuration={4000}
-          onClose={() => setSnackbar({ ...snackbar, open: false })}
-        >
-          <Alert
-            severity={snackbar.severity}
-            onClose={() => setSnackbar({ ...snackbar, open: false })}
-            sx={{ borderRadius: 2 }}
-          >
-            {snackbar.message}
-          </Alert>
-        </Snackbar>
+  {/* Snackbar removed: now using notification system via useNotification */}
         {/* View Category Dialog */}
         <Dialog
           open={viewDialogOpen}

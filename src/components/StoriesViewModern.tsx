@@ -5,8 +5,6 @@ import {
   Paper,
   Button,
   useTheme,
-  Snackbar,
-  Alert,
   TextField,
   InputAdornment,
   IconButton,
@@ -34,6 +32,7 @@ import { motion } from "framer-motion";
 import apiService from "../services/api";
 import { ModernTable } from "./ModernTables";
 import { ConfirmDialog } from "./ConfirmDialog";
+import { useNotification } from "../hooks/useNotification";
 
 interface Story {
   id: string;
@@ -52,6 +51,7 @@ interface StoriesFormData {
   description: string;
   images: string[];
   removeImages: string[]; // Track individual existing images to be removed
+  existingImages?: string[]; // Add this property to fix the error
 }
 
 interface ImageUploadState {
@@ -61,17 +61,15 @@ interface ImageUploadState {
 
 const StoriesViewModern: React.FC = () => {
   const theme = useTheme();
+  const { showError, showSuccess, showWarning } = useNotification();
   const [stories, setStories] = useState<Story[]>([]);
   const [loading, setLoading] = useState(true);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(0);
   const [pageSize, setPageSize] = useState(5);
   const [searchQuery, setSearchQuery] = useState("");
-  const [snackbar, setSnackbar] = useState({
-    open: false,
-    message: "",
-    severity: "success" as "success" | "error" | "info" | "warning",
-  });
+
+  // Remove legacy snackbar state - now using useNotification
 
   const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
   const [storyToDelete, setStoryToDelete] = useState<Story | null>(null);
@@ -96,14 +94,10 @@ const StoriesViewModern: React.FC = () => {
     previews: [],
   });
 
-  useEffect(() => {
-    fetchStories();
-  }, [page, pageSize, searchQuery]);
-
-  const fetchStories = async () => {
+  const fetchStories = React.useCallback(async () => {
     try {
       setLoading(true);
-      const filters: any = {};
+      const filters: Record<string, string> = {};
       if (searchQuery) filters.search = searchQuery;
 
       const response = await apiService.get("/stories", {
@@ -117,18 +111,17 @@ const StoriesViewModern: React.FC = () => {
       setTotal(response.data.total || 0);
     } catch (error) {
       console.error("Error fetching stories:", error);
-      showSnackbar("Error fetching stories", "error");
+      showError(error as Error);
     } finally {
       setLoading(false);
     }
-  };
+  }, [page, pageSize, searchQuery, showError]);
 
-  const showSnackbar = (
-    message: string,
-    severity: "success" | "error" | "info" | "warning" = "success"
-  ) => {
-    setSnackbar({ open: true, message, severity });
-  };
+  useEffect(() => {
+    fetchStories();
+  }, [fetchStories]);
+
+  // Remove legacy showSnackbar function - now using useNotification exclusively
 
   const handleEdit = (story: Story) => {
     console.log("🔄 Edit - Story data:", story);
@@ -178,17 +171,13 @@ const StoriesViewModern: React.FC = () => {
 
     try {
       await apiService.delete(`/stories/${storyToDelete.id}`);
-      showSnackbar("Story deleted successfully", "success");
+      showSuccess("Story deleted successfully");
       setConfirmDialogOpen(false);
       setStoryToDelete(null);
       fetchStories();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error deleting story:", error);
-      const errorMessage =
-        error?.response?.data?.message ||
-        error?.message ||
-        "Error deleting story";
-      showSnackbar(errorMessage, "error");
+      showError(error as Error);
     }
   };
 
@@ -200,7 +189,7 @@ const StoriesViewModern: React.FC = () => {
   const handleSave = async () => {
     try {
       if (!formData.story_name.trim()) {
-        showSnackbar("Story name is required", "error");
+        showWarning("Story name is required");
         return;
       }
 
@@ -224,13 +213,13 @@ const StoriesViewModern: React.FC = () => {
         console.log("  - Images to keep:", existingImages);
       }
 
-      const baseData = {
+      const baseData: StoriesFormData = {
         story_name: formData.story_name,
         description: formData.description,
+        images: formData.images || [],
+        removeImages: formData.removeImages || [],
         ...(editDialogOpen && {
-          removeImages: removeImages.length > 0 ? removeImages : undefined,
-          existingImages:
-            existingImages.length > 0 ? existingImages : undefined,
+          removeImages: removeImages.length > 0 ? removeImages : [],
         }),
       };
 
@@ -248,10 +237,10 @@ const StoriesViewModern: React.FC = () => {
         // For create, use the service method with files
         const newStory = await handleCreateStory(baseData, imagesToUpload);
         console.log("✅ Frontend - Created story received:", newStory);
-        showSnackbar("Story created successfully", "success");
+        showSuccess("Story created successfully");
       } else if (editDialogOpen && selectedStory) {
         if (!selectedStory.id) {
-          showSnackbar("Invalid story ID", "error");
+          showError(new Error("Invalid story ID"));
           return;
         }
 
@@ -266,7 +255,7 @@ const StoriesViewModern: React.FC = () => {
         // Update the selectedStory state to reflect the changes immediately
         setSelectedStory(updatedStory);
 
-        showSnackbar("Story updated successfully", "success");
+        showSuccess("Story updated successfully");
       }
 
       setAddDialogOpen(false);
@@ -275,13 +264,14 @@ const StoriesViewModern: React.FC = () => {
       fetchStories();
     } catch (error) {
       console.error("Error saving story:", error);
-      const errorMessage =
-        error instanceof Error ? error.message : "Error saving story";
-      showSnackbar(errorMessage, "error");
+      showError(error as Error);
     }
   };
 
-  const handleCreateStory = async (data: any, imageFiles?: File[]) => {
+  const handleCreateStory = async (
+    data: StoriesFormData,
+    imageFiles?: File[]
+  ) => {
     const formData = new FormData();
     formData.append("story_name", data.story_name);
     formData.append("description", data.description || "");
@@ -301,7 +291,7 @@ const StoriesViewModern: React.FC = () => {
 
   const handleUpdateStory = async (
     storyId: string,
-    data: any,
+    data: StoriesFormData,
     imageFiles?: File[]
   ) => {
     const formData = new FormData();
@@ -363,9 +353,10 @@ const StoriesViewModern: React.FC = () => {
       const totalCurrentImages = existingImageCount + currentNewImageCount;
 
       if (totalCurrentImages + files.length > 5) {
-        showSnackbar(
-          `Maximum 5 images allowed. You currently have ${totalCurrentImages} images.`,
-          "error"
+        showError(
+          new Error(
+            `Maximum 5 images allowed. You currently have ${totalCurrentImages} images.`
+          )
         );
         return;
       }
@@ -373,7 +364,7 @@ const StoriesViewModern: React.FC = () => {
       // Validate each file
       for (const file of files) {
         if (file.size > 1024 * 1024) {
-          showSnackbar(`File ${file.name} exceeds 1MB limit`, "error");
+          showError(new Error(`File ${file.name} exceeds 1MB limit`));
           return;
         }
         const allowedTypes = [
@@ -384,7 +375,7 @@ const StoriesViewModern: React.FC = () => {
           "image/webp",
         ];
         if (!allowedTypes.includes(file.type)) {
-          showSnackbar(`File ${file.name} is not a valid image type`, "error");
+          showError(new Error(`File ${file.name} is not a valid image type`));
           return;
         }
       }
@@ -422,13 +413,12 @@ const StoriesViewModern: React.FC = () => {
     if (isAlreadyMarkedForRemoval) {
       // Remove from removal list (unmark for removal)
       newRemoveList = currentRemoveList.filter((url) => url !== imageUrl);
-      showSnackbar("Image unmarked for removal", "success");
+      showSuccess("Image unmarked for removal");
     } else {
       // Add to removal list (mark for removal)
       newRemoveList = [...currentRemoveList, imageUrl];
-      showSnackbar(
-        "Image marked for removal - click Update to delete permanently",
-        "warning"
+      showWarning(
+        "Image marked for removal - click Update to delete permanently"
       );
     }
 
@@ -440,7 +430,7 @@ const StoriesViewModern: React.FC = () => {
       id: "story_name",
       label: "Story Name",
       minWidth: 200,
-      format: (value: any) => (
+      format: (value: string) => (
         <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
           <AutoStories sx={{ fontSize: 20, color: "primary.main" }} />
           <Typography variant="body2" fontWeight={600}>
@@ -453,7 +443,7 @@ const StoriesViewModern: React.FC = () => {
       id: "images",
       label: "Images",
       minWidth: 120,
-      format: (value: any) => (
+      format: (value: string[]) => (
         <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
           <PhotoLibrary sx={{ fontSize: 18, color: "primary.main" }} />
           <Chip
@@ -472,7 +462,7 @@ const StoriesViewModern: React.FC = () => {
       id: "description",
       label: "Description",
       minWidth: 300,
-      format: (value: any) => (
+      format: (value: string) => (
         <Typography
           variant="body2"
           color="text.secondary"
@@ -491,7 +481,7 @@ const StoriesViewModern: React.FC = () => {
       id: "created_at",
       label: "Created",
       minWidth: 120,
-      format: (value: any) => (
+      format: (value: string) => (
         <Typography variant="body2" color="text.secondary">
           {new Date(value).toLocaleDateString()}
         </Typography>
@@ -612,21 +602,6 @@ const StoriesViewModern: React.FC = () => {
           title="Stories"
           emptyMessage="No stories found"
         />
-
-        {/* Snackbar */}
-        <Snackbar
-          open={snackbar.open}
-          autoHideDuration={4000}
-          onClose={() => setSnackbar({ ...snackbar, open: false })}
-        >
-          <Alert
-            severity={snackbar.severity}
-            onClose={() => setSnackbar({ ...snackbar, open: false })}
-            sx={{ borderRadius: 2 }}
-          >
-            {snackbar.message}
-          </Alert>
-        </Snackbar>
 
         {/* Confirm Delete Dialog */}
         <ConfirmDialog

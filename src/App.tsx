@@ -10,6 +10,7 @@ import CssBaseline from "@mui/material/CssBaseline";
 import { AdminDashboard } from "./components/AdminDashboard";
 import { LoginPage } from "./pages/LoginPage";
 import SetupPassword from "./pages/SetupPassword";
+import { NotificationProvider } from "./contexts/NotificationContext";
 
 const VITE_API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 const lightTheme = createTheme({
@@ -191,21 +192,23 @@ const App: React.FC = () => {
   };
 
   return (
-    <Router>
-      <Routes>
-        <Route
-          path="/*"
-          element={
-            <AppContent
-              isDarkMode={isDarkMode}
-              lightTheme={lightTheme}
-              darkTheme={darkTheme}
-              toggleTheme={toggleTheme}
-            />
-          }
-        />
-      </Routes>
-    </Router>
+    <NotificationProvider>
+      <Router>
+        <Routes>
+          <Route
+            path="/*"
+            element={
+              <AppContent
+                isDarkMode={isDarkMode}
+                lightTheme={lightTheme}
+                darkTheme={darkTheme}
+                toggleTheme={toggleTheme}
+              />
+            }
+          />
+        </Routes>
+      </Router>
+    </NotificationProvider>
   );
 };
 

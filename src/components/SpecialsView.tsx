@@ -78,6 +78,12 @@ const SPECIAL_TYPES = [
 ];
 
 export const SpecialsView: React.FC = () => {
+  // Helper to get the day name for a special
+  const getSpecialDayName = (special: Special): string => {
+    if (!special.specialsDayId) return "";
+    const day = specialsDays.find((d) => d.id === special.specialsDayId);
+    return day ? day.day_name : "";
+  };
   const theme = useTheme();
   const [specials, setSpecials] = useState<Special[]>([]);
   const [specialsDays, setSpecialsDays] = useState<SpecialsDay[]>([]);
@@ -199,7 +205,7 @@ export const SpecialsView: React.FC = () => {
         );
       }, 3000); // Change image every 3 seconds
 
-  setAutoSwapInterval(Number(interval));
+      setAutoSwapInterval(Number(interval));
 
       return () => {
         if (interval) clearInterval(interval);
@@ -355,7 +361,7 @@ export const SpecialsView: React.FC = () => {
         existingImages: existingImagesToKeep, // Include array of existing images to keep
       };
 
-  let saveData: Partial<Special>;
+      let saveData: Partial<Special>;
 
       if (formData.special_type === "daily") {
         saveData = {
@@ -881,20 +887,33 @@ export const SpecialsView: React.FC = () => {
                                     justifyContent: "space-between",
                                     alignItems: "flex-start",
                                     mb: 2,
+                                    gap: 1,
                                   }}
                                 >
-                                  <Typography
-                                    variant="h6"
-                                    fontWeight={600}
-                                    sx={{ flexGrow: 1 }}
-                                  >
-                                    {special.special_type === "seasonal"
-                                      ? special.season_name ||
-                                        "Seasonal Special"
-                                      : special.special_type === "daily"
-                                      ? "Daily Special"
-                                      : "Late Night Special"}
-                                  </Typography>
+                                  <Box sx={{ flexGrow: 1 }}>
+                                    <Typography variant="h6" fontWeight={600}>
+                                      {special.special_type === "seasonal"
+                                        ? special.season_name ||
+                                          "Seasonal Special"
+                                        : special.special_type === "daily"
+                                        ? "Daily Special"
+                                        : "Late Night Special"}
+                                    </Typography>
+                                    {getSpecialDayName(special) && (
+                                      <Chip
+                                        label={getSpecialDayName(special)}
+                                        size="small"
+                                        sx={{
+                                          backgroundColor:
+                                            theme.palette.info.light,
+                                          color:
+                                            theme.palette.info.contrastText,
+                                          fontWeight: 600,
+                                          mt: 0.5,
+                                        }}
+                                      />
+                                    )}
+                                  </Box>
                                   <Chip
                                     label={
                                       special.special_type

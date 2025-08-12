@@ -5,8 +5,6 @@ import {
   Paper,
   Button,
   useTheme,
-  Snackbar,
-  Alert,
   TextField,
   Dialog,
   DialogTitle,
@@ -39,6 +37,7 @@ import {
 } from "../services/api";
 import { ModernTable } from "./ModernTables";
 import { ConfirmDialog } from "./ConfirmDialog";
+import { useNotification } from "../hooks/useNotification";
 
 interface AdminFormData {
   email: string;
@@ -50,6 +49,7 @@ interface AdminFormData {
 
 export const AdminsView: React.FC = () => {
   const theme = useTheme();
+  const { showError, showSuccess, showWarning } = useNotification();
   const [admins, setAdmins] = useState<Admin[]>([]);
   const [loading, setLoading] = useState(true);
   const [total, setTotal] = useState(0);
@@ -75,12 +75,6 @@ export const AdminsView: React.FC = () => {
   const [formData, setFormData] = useState<AdminFormData>({
     email: "",
     role: "admin",
-  });
-
-  const [snackbar, setSnackbar] = useState({
-    open: false,
-    message: "",
-    severity: "success" as "success" | "error" | "info" | "warning",
   });
 
   useEffect(() => {
@@ -196,7 +190,7 @@ export const AdminsView: React.FC = () => {
       setCurrentUser(user);
     } catch (error) {
       console.error("Error fetching current user:", error);
-      showSnackbar("Error fetching user profile", "error");
+      showError("Error fetching user profile");
     } finally {
       setUserLoading(false);
     }
@@ -243,7 +237,7 @@ export const AdminsView: React.FC = () => {
       setTotal(searchFiltered.length);
     } catch (error) {
       console.error("Error fetching admins:", error);
-      showSnackbar("Error fetching admins", "error");
+      showError("Error fetching admins");
       setAdmins([]);
       setAllAdmins([]);
       setFilteredAdmins([]);
@@ -257,7 +251,15 @@ export const AdminsView: React.FC = () => {
     message: string,
     severity: "success" | "error" | "info" | "warning" = "success"
   ) => {
-    setSnackbar({ open: true, message, severity });
+    if (severity === "success") {
+      showSuccess(message);
+    } else if (severity === "error") {
+      showError(message);
+    } else if (severity === "warning") {
+      showWarning(message);
+    } else {
+      showSuccess(message); // fallback to success for info
+    }
   };
 
   const canEditAdmin = (admin: Admin) => {
@@ -324,6 +326,27 @@ export const AdminsView: React.FC = () => {
       ),
     },
     {
+      id: "address",
+      label: "Address",
+      minWidth: 180,
+      format: (value: any) => (
+        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+          {value ? (
+            <>
+              <LocationOn sx={{ fontSize: 16, color: "text.secondary" }} />
+              <Typography variant="body2" noWrap title={value}>
+                {value}
+              </Typography>
+            </>
+          ) : (
+            <Typography variant="body2" color="text.secondary">
+              Not set
+            </Typography>
+          )}
+        </Box>
+      ),
+    },
+    {
       id: "role",
       label: "Role",
       minWidth: 120,
@@ -370,6 +393,34 @@ export const AdminsView: React.FC = () => {
           color={value ? "success" : "warning"}
           sx={{ borderRadius: 2 }}
         />
+      ),
+    },
+    {
+      id: "created_at",
+      label: "Created",
+      minWidth: 120,
+      format: (value: any) => (
+        <Typography variant="body2" color="text.secondary">
+          {new Date(value).toLocaleDateString("en-US", {
+            month: "short",
+            day: "numeric",
+            year: "numeric",
+          })}
+        </Typography>
+      ),
+    },
+    {
+      id: "updated_at",
+      label: "Last Updated",
+      minWidth: 130,
+      format: (value: any) => (
+        <Typography variant="body2" color="text.secondary">
+          {new Date(value).toLocaleDateString("en-US", {
+            month: "short",
+            day: "numeric",
+            year: "numeric",
+          })}
+        </Typography>
       ),
     },
   ];
@@ -1195,21 +1246,6 @@ export const AdminsView: React.FC = () => {
           cancelText="Cancel"
           severity="error"
         />
-
-        {/* Snackbar */}
-        <Snackbar
-          open={snackbar.open}
-          autoHideDuration={4000}
-          onClose={() => setSnackbar({ ...snackbar, open: false })}
-        >
-          <Alert
-            severity={snackbar.severity}
-            onClose={() => setSnackbar({ ...snackbar, open: false })}
-            sx={{ borderRadius: 2 }}
-          >
-            {snackbar.message}
-          </Alert>
-        </Snackbar>
       </Box>
     </motion.div>
   );

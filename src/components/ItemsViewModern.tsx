@@ -5,8 +5,6 @@ import {
   Paper,
   Button,
   useTheme,
-  Snackbar,
-  Alert,
   TextField,
   FormControl,
   InputLabel,
@@ -33,6 +31,8 @@ import {
   CheckCircle,
   Delete as DeleteIcon,
   PhotoCamera,
+  Update,
+  CalendarToday,
 } from "@mui/icons-material";
 import { motion } from "framer-motion";
 import {
@@ -44,9 +44,11 @@ import {
 } from "../services/api";
 import { ModernTable } from "./ModernTables";
 import { ConfirmDialog } from "./ConfirmDialog";
+import { useNotification } from "../hooks/useNotification";
 
 export const ItemsView: React.FC = () => {
   const theme = useTheme();
+  const { showSuccess, showError } = useNotification();
   const [items, setItems] = useState<Item[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
@@ -58,11 +60,6 @@ export const ItemsView: React.FC = () => {
   const [availabilityFilter, setAvailabilityFilter] = useState<string>("all");
   const [visibilityFilter, setVisibilityFilter] = useState<string>("all");
   const [favouriteFilter, setFavouriteFilter] = useState<string>("all");
-  const [snackbar, setSnackbar] = useState({
-    open: false,
-    message: "",
-    severity: "success" as "success" | "error" | "info" | "warning",
-  });
 
   const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<Item | null>(null);
@@ -100,19 +97,40 @@ export const ItemsView: React.FC = () => {
     favouriteFilter,
   ]);
 
+  const getErrorMessage = (error: unknown): string => {
+    if (!error) return "Unknown error";
+    if (typeof error === "string") return error;
+    if (error instanceof Error) return error.message;
+    if (typeof error === "object" && error !== null) {
+      // Check for Axios error shape
+      const errObj = error as any;
+      if (
+        errObj.response &&
+        errObj.response.data &&
+        typeof errObj.response.data.message === "string"
+      ) {
+        return errObj.response.data.message;
+      }
+      if (typeof errObj.message === "string") return errObj.message;
+    }
+    return "An unexpected error occurred";
+    return "An unexpected error occurred";
+  };
+
   const fetchCategories = async () => {
     try {
       const response = await categoryService.getAll(1, 100); // Get all categories
       setCategories(response.data);
     } catch (error) {
       console.error("Error fetching categories:", error);
+      showError(new Error(getErrorMessage(error)));
     }
   };
 
   const fetchItems = async () => {
     try {
       setLoading(true);
-      const filters: any = {};
+      const filters: Record<string, unknown> = {};
 
       if (searchQuery) filters.search = searchQuery;
       if (categoryFilter !== "all") filters.categoryId = categoryFilter;
@@ -132,17 +150,10 @@ export const ItemsView: React.FC = () => {
       setTotal(response.total);
     } catch (error) {
       console.error("Error fetching items:", error);
-      showSnackbar("Error fetching items", "error");
+      showError(new Error(getErrorMessage(error)));
     } finally {
       setLoading(false);
     }
-  };
-
-  const showSnackbar = (
-    message: string,
-    severity: "success" | "error" | "info" | "warning" = "success"
-  ) => {
-    setSnackbar({ open: true, message, severity });
   };
 
   const getCategoryName = (categoryId: string) => {
@@ -180,20 +191,15 @@ export const ItemsView: React.FC = () => {
 
   const confirmDelete = async () => {
     if (!itemToDelete) return;
-
     try {
       await itemService.delete(itemToDelete.id);
-      showSnackbar("Item deleted successfully", "success");
+      showSuccess(`Item "${itemToDelete.name}" deleted successfully`);
       setConfirmDialogOpen(false);
       setItemToDelete(null);
       fetchItems(); // Refresh the list
-    } catch (error: any) {
+    } catch (error) {
       console.error("Error deleting item:", error);
-      const errorMessage =
-        error?.response?.data?.message ||
-        error?.message ||
-        "Error deleting item";
-      showSnackbar(errorMessage, "error");
+      showError(new Error(getErrorMessage(error)));
     }
   };
 
@@ -263,21 +269,18 @@ export const ItemsView: React.FC = () => {
     try {
       // Validate form data
       if (!formData.name.trim()) {
-        showSnackbar("Item name is required", "error");
+        showError("Item name is required");
         return;
       }
 
       if (!formData.categoryId) {
-        showSnackbar("Category is required", "error");
+        showError("Category is required");
         return;
       }
 
       // Only validate price if original_price is provided
       if (formData.original_price && parseFloat(formData.original_price) <= 0) {
-        showSnackbar(
-          "Original price must be greater than 0 if provided",
-          "error"
-        );
+        showError("Original price must be greater than 0 if provided");
         return;
       }
 
@@ -287,14 +290,19 @@ export const ItemsView: React.FC = () => {
         (parseFloat(formData.discount) < 0 ||
           parseFloat(formData.discount) > 100)
       ) {
-        showSnackbar("Discount must be between 0 and 100 if provided", "error");
+        showError("Discount must be between 0 and 100 if provided");
         return;
       }
 
       // First upload any new images
       let uploadedImageUrls: string[] = [];
       if (imageFiles.length > 0) {
-        uploadedImageUrls = await uploadImages(imageFiles);
+        try {
+          uploadedImageUrls = await uploadImages(imageFiles);
+        } catch (error) {
+          showError(getErrorMessage(error));
+          return;
+        }
       }
 
       // Combine existing images with newly uploaded images
@@ -317,14 +325,14 @@ export const ItemsView: React.FC = () => {
 
       if (addDialogOpen) {
         await itemService.create(saveData);
-        showSnackbar("Item created successfully", "success");
+        showSuccess("Item created successfully");
       } else if (editDialogOpen && selectedItem) {
         if (!selectedItem.id) {
-          showSnackbar("Invalid item ID", "error");
+          showError("Invalid item ID");
           return;
         }
         await itemService.update(selectedItem.id, saveData);
-        showSnackbar("Item updated successfully", "success");
+        showSuccess("Item updated successfully");
       }
 
       setAddDialogOpen(false);
@@ -333,9 +341,7 @@ export const ItemsView: React.FC = () => {
       fetchItems(); // Refresh the list
     } catch (error) {
       console.error("Error saving item:", error);
-      const errorMessage =
-        error instanceof Error ? error.message : "Error saving item";
-      showSnackbar(errorMessage, "error");
+      showError(getErrorMessage(error));
     }
   };
 
@@ -363,14 +369,14 @@ export const ItemsView: React.FC = () => {
 
     // Validate file count (max 5 total including existing)
     if (files.length + formData.images.length + imageFiles.length > 5) {
-      showSnackbar("Maximum 5 images allowed", "error");
+      showError("Maximum 5 images allowed");
       return;
     }
 
     // Validate each file
     for (const file of files) {
       if (file.size > 1024 * 1024) {
-        showSnackbar(`File ${file.name} exceeds 1MB limit`, "error");
+        showError(`File ${file.name} exceeds 1MB limit`);
         return;
       }
 
@@ -382,7 +388,7 @@ export const ItemsView: React.FC = () => {
         "image/webp",
       ];
       if (!allowedTypes.includes(file.type)) {
-        showSnackbar(`File ${file.name} is not a valid image type`, "error");
+        showError(`File ${file.name} is not a valid image type`);
         return;
       }
     }
@@ -407,19 +413,15 @@ export const ItemsView: React.FC = () => {
 
   const removeExistingImage = async (imageUrl: string, index: number) => {
     try {
-      // Remove from the backend (this will delete from S3)
       await itemService.deleteImage(imageUrl);
-
-      // Remove from form data
       setFormData((prev) => ({
         ...prev,
         images: prev.images.filter((_, i) => i !== index),
       }));
-
-      showSnackbar("Image removed successfully", "success");
+      showSuccess("Image removed successfully");
     } catch (error) {
       console.error("Error removing image:", error);
-      showSnackbar("Error removing image", "error");
+      showError(getErrorMessage(error));
     }
   };
 
@@ -429,7 +431,8 @@ export const ItemsView: React.FC = () => {
       return result.imageUrls || [];
     } catch (error) {
       console.error("Error uploading images:", error);
-      throw new Error("Failed to upload images");
+      showError(getErrorMessage(error));
+      throw new Error(getErrorMessage(error));
     }
   };
   const columns = [
@@ -437,7 +440,7 @@ export const ItemsView: React.FC = () => {
       id: "name",
       label: "Item Name",
       minWidth: 200,
-      format: (value: any) => (
+      format: (value: string) => (
         <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
           <Restaurant sx={{ fontSize: 20, color: "primary.main" }} />
           <Typography variant="body2" fontWeight={600}>
@@ -473,6 +476,7 @@ export const ItemsView: React.FC = () => {
                 height: "100%",
                 objectFit: "cover",
               }}
+              className="image-style"
             />
           ) : (
             <Restaurant sx={{ color: theme.palette.grey[400] }} />
@@ -619,6 +623,60 @@ export const ItemsView: React.FC = () => {
         </IconButton>
       ),
     },
+    {
+      id: "description",
+      label: "Description",
+      minWidth: 200,
+      format: (value: any) => (
+        <Typography
+          variant="body2"
+          color="text.secondary"
+          sx={{
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            whiteSpace: "nowrap",
+            maxWidth: 200,
+          }}
+          title={value || "No description"}
+        >
+          {value || "No description provided"}
+        </Typography>
+      ),
+    },
+    {
+      id: "created_at",
+      label: "Created",
+      minWidth: 120,
+      format: (value: any) => (
+        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+          <CalendarToday sx={{ fontSize: 16, color: "text.secondary" }} />
+          <Typography variant="body2" color="text.secondary">
+            {new Date(value).toLocaleDateString("en-US", {
+              month: "short",
+              day: "numeric",
+              year: "numeric",
+            })}
+          </Typography>
+        </Box>
+      ),
+    },
+    {
+      id: "updated_at",
+      label: "Last Updated",
+      minWidth: 130,
+      format: (value: any) => (
+        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+          <Update sx={{ fontSize: 16, color: "text.secondary" }} />
+          <Typography variant="body2" color="text.secondary">
+            {new Date(value).toLocaleDateString("en-US", {
+              month: "short",
+              day: "numeric",
+              year: "numeric",
+            })}
+          </Typography>
+        </Box>
+      ),
+    },
   ];
   const clearFilters = () => {
     setCategoryFilter("all");
@@ -640,16 +698,15 @@ export const ItemsView: React.FC = () => {
         availability: !item.availability,
       };
       await itemService.update(item.id, updatedData);
-      showSnackbar(
+      showSuccess(
         `Item ${
           item.availability ? "marked as unavailable" : "marked as available"
-        }`,
-        "success"
+        }`
       );
       fetchItems();
     } catch (error) {
       console.error("❌ Error toggling availability:", error);
-      showSnackbar("Error updating item availability", "error");
+      showError(getErrorMessage(error));
     }
   };
 
@@ -665,14 +722,11 @@ export const ItemsView: React.FC = () => {
         visibility: !item.visibility,
       };
       await itemService.update(item.id, updatedData);
-      showSnackbar(
-        `Item ${item.visibility ? "hidden" : "made visible"}`,
-        "success"
-      );
+      showSuccess(`Item ${item.visibility ? "hidden" : "made visible"}`);
       fetchItems();
     } catch (error) {
       console.error("❌ Error toggling visibility:", error);
-      showSnackbar("Error updating item visibility", "error");
+      showError(getErrorMessage(error));
     }
   };
 
@@ -688,20 +742,17 @@ export const ItemsView: React.FC = () => {
         is_favourite: !item.is_favourite,
       };
       await itemService.update(item.id, updatedData);
-      showSnackbar(
+      showSuccess(
         `Item ${
           item.is_favourite ? "removed from favourites" : "added to favourites"
-        }`,
-        "success"
+        }`
       );
       fetchItems();
     } catch (error) {
       console.error("❌ Error toggling favourite:", error);
-      showSnackbar("Error updating item favourite status", "error");
+      showError(getErrorMessage(error));
     }
   };
-
-  // ...existing code...
 
   return (
     <motion.div
@@ -901,20 +952,6 @@ export const ItemsView: React.FC = () => {
           title="Items"
           emptyMessage="No items found"
         />{" "}
-        {/* Snackbar */}
-        <Snackbar
-          open={snackbar.open}
-          autoHideDuration={4000}
-          onClose={() => setSnackbar({ ...snackbar, open: false })}
-        >
-          <Alert
-            severity={snackbar.severity}
-            onClose={() => setSnackbar({ ...snackbar, open: false })}
-            sx={{ borderRadius: 2 }}
-          >
-            {snackbar.message}
-          </Alert>
-        </Snackbar>
         {/* Add/Edit Dialog */}
         <Dialog
           open={addDialogOpen || editDialogOpen}
@@ -1053,6 +1090,7 @@ export const ItemsView: React.FC = () => {
                           height: "100%",
                           objectFit: "cover",
                         }}
+                        className="image-style"
                       />
                       <IconButton
                         size="small"
@@ -1095,6 +1133,7 @@ export const ItemsView: React.FC = () => {
                             height: "100%",
                             objectFit: "cover",
                           }}
+                          className="image-style"
                         />
                         <IconButton
                           size="small"
