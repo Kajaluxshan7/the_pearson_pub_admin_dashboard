@@ -1,6 +1,7 @@
 import axios from "axios";
 
-const API_BASE_URL = "http://15.223.253.194:5000/"; // NestJS backend URL
+
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL; // NestJS backend URL
 // const API_BASE_URL = "http://localhost:5000/"; // NestJS backend URL
 
 // Create axios instance with common config
@@ -13,19 +14,7 @@ const api = axios.create({
 });
 
 // Request interceptor to add auth token from localStorage if available
-api.interceptors.request.use(
-  (config) => {
-    // First try to get token from localStorage (for manual testing)
-    const token = localStorage.getItem("authToken");
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
-  },
-  (error) => {
-    return Promise.reject(error);
-  }
-);
+// No need for Authorization header, rely on cookies
 
 // Response interceptor to handle errors
 api.interceptors.response.use(
@@ -34,6 +23,7 @@ api.interceptors.response.use(
     if (error.response?.status === 401) {
       // Only redirect to login if this is NOT a login attempt
       const isLoginRequest = error.config?.url?.includes("/auth/login");
+      console.log(isLoginRequest);
 
       if (!isLoginRequest) {
         // Handle unauthorized access for protected routes

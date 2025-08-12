@@ -28,6 +28,7 @@ import { motion } from "framer-motion";
 import { authService } from "../services/api";
 import Logo from "../assets/logo.png";
 
+const VITE_API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 interface LoginPageProps {
   onLogin: (token: string, user: any) => void;
   isDarkMode: boolean;
@@ -149,10 +150,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({
     setError("");
 
     try {
-      // Redirect to Google OAuth endpoint
-      const backendUrl =
-        import.meta.env.VITE_API_URL || "http://15.223.253.194:5000";
-      window.location.href = `${backendUrl}/auth/google`;
+      window.location.href = `${VITE_API_BASE_URL}/auth/google`;
     } catch (error: any) {
       console.error("Google login error:", error);
       setError("Google login failed. Please try again.");
