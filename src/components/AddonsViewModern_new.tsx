@@ -78,11 +78,12 @@ export const AddonsViewModern: React.FC<AddonsViewModernProps> = () => {
   const fetchAddons = async () => {
     try {
       setLoading(true);
-      const filters: any = {};
-
+      // Build filters object as expected by backend
+      const filters: Record<string, string> = {};
       if (searchQuery) filters.search = searchQuery;
-      if (categoryFilter !== "all") filters.category_type = categoryFilter;
+      if (categoryFilter && categoryFilter !== "all") filters.category_type = categoryFilter;
 
+      // Pass correct arguments to addonService.getAll
       const response: PaginatedResponse<Addon> = await addonService.getAll(
         page + 1,
         pageSize,
@@ -92,7 +93,21 @@ export const AddonsViewModern: React.FC<AddonsViewModernProps> = () => {
       setTotal(response.total);
     } catch (error) {
       console.error("Error fetching addons:", error);
-      showSnackbar("Error fetching addons", "error");
+      let message = "Error fetching addons";
+      // Axios error with backend response
+      if (error && (error as any)?.response?.data?.error) {
+        const backendMsg = (error as any).response.data.error;
+        if (
+          typeof backendMsg === "string" &&
+          (backendMsg.includes("relation") || backendMsg.includes("does not exist"))
+        ) {
+          message =
+            "Server error: Addons table does not exist. Please check database setup or migrations.";
+        } else {
+          message = backendMsg;
+        }
+      }
+      showSnackbar(message, "error");
     } finally {
       setLoading(false);
     }
