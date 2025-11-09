@@ -1,103 +1,155 @@
-// Timezone utility for admin dashboard
+import { DateTime } from "luxon";
+
+/**
+ * Centralized timezone utilities for the Admin Dashboard.
+ * All date/time operations use America/Toronto timezone.
+ * Backend stores UTC, we convert at API boundaries.
+ */
 export class AdminTimezoneUtil {
   private static readonly TIMEZONE = "America/Toronto";
 
   /**
-   * Convert any date to Toronto timezone and format for display
+   * Convert UTC date from API to Toronto timezone for display
+   * @param utcDateLike - UTC date string or Date object from API
+   * @param format - Display format (default: human readable)
+   * @returns Formatted string in Toronto timezone
    */
-  static formatTorontoTime(
-    date: string | Date,
-    options?: Intl.DateTimeFormatOptions
+  static formatToronto(
+    utcDateLike: string | Date | null | undefined,
+    format = "MMMM d, yyyy h:mm a"
   ): string {
-    if (!date) return "";
+    if (!utcDateLike) return "";
 
     try {
-      const dateObj = typeof date === "string" ? new Date(date) : date;
+      const dt = DateTime.fromJSDate(new Date(utcDateLike), {
+        zone: "utc",
+      }).setZone(this.TIMEZONE);
 
-      const defaultOptions: Intl.DateTimeFormatOptions = {
-        timeZone: this.TIMEZONE,
-        year: "numeric",
-        month: "long",
-        day: "numeric",
-        hour: "2-digit",
-        minute: "2-digit",
-        hour12: true,
-        ...options,
-      };
-
-      return new Intl.DateTimeFormat("en-US", defaultOptions).format(dateObj);
+      return dt.toFormat(format);
     } catch (error) {
-      console.error("Error formatting date:", error);
-      return typeof date === "string" ? date : date.toString();
+      console.error("Error formatting Toronto time:", error);
+      return String(utcDateLike);
     }
   }
 
   /**
-   * Format datetime for form inputs (YYYY-MM-DDTHH:MM format in Toronto timezone)
+   * Convert Toronto local input to UTC ISO string for API
+   * Use this when sending datetime values to the backend
+   * @param torontoLocal - Date input assumed to be in Toronto timezone
+   * @returns UTC ISO string for API
    */
-  static formatForInput(date: string | Date): string {
-    if (!date) return "";
+  static parseTorontoInputToISO(torontoLocal: string | Date): string {
+    if (!torontoLocal) {
+      throw new Error("Toronto local date is required");
+    }
 
     try {
-      const dateObj = typeof date === "string" ? new Date(date) : date;
-
-      // Convert to Toronto timezone and format for datetime-local input
-      const torontoTime = new Intl.DateTimeFormat("sv-SE", {
-        timeZone: this.TIMEZONE,
-        year: "numeric",
-        month: "2-digit",
-        day: "2-digit",
-        hour: "2-digit",
-        minute: "2-digit",
-      }).format(dateObj);
-
-      return torontoTime.replace(" ", "T");
+      const dt = DateTime.fromJSDate(new Date(torontoLocal), {
+        zone: this.TIMEZONE,
+      });
+      return dt.toUTC().toISO() ?? "";
     } catch (error) {
-      console.error("Error formatting for input:", error);
+      console.error("Error parsing Toronto input:", error);
+      throw new Error(`Invalid date format: ${torontoLocal}`);
+    }
+  }
+
+  /**
+   * Format UTC date for datetime-local input (Toronto timezone)
+   * @param utcDateLike - UTC date from API
+   * @returns String in YYYY-MM-DDTHH:MM format for HTML datetime-local inputs
+   */
+  static formatForDateTimeInput(utcDateLike: string | Date | null): string {
+    if (!utcDateLike) return "";
+
+    try {
+      const dt = DateTime.fromJSDate(new Date(utcDateLike), {
+        zone: "utc",
+      }).setZone(this.TIMEZONE);
+
+      return dt.toFormat("yyyy-MM-dd'T'HH:mm");
+    } catch (error) {
+      console.error("Error formatting for datetime input:", error);
       return "";
     }
   }
 
   /**
-   * Parse datetime from form input and convert to UTC
+   * Format date only (no time) for display in Toronto timezone
+   * @param utcDateLike - UTC date from API
+   * @returns Formatted date string
    */
-  static parseFromInput(dateTimeString: string): Date {
-    if (!dateTimeString) return new Date();
-
-    try {
-      // Treat the input as Toronto time and convert to UTC
-      const [datePart, timePart] = dateTimeString.split("T");
-      const [year, month, day] = datePart.split("-").map(Number);
-      const [hour, minute] = timePart.split(":").map(Number);
-
-      // Create date in Toronto timezone
-      const torontoDate = new Date();
-      torontoDate.setFullYear(year);
-      torontoDate.setMonth(month - 1); // Month is 0-indexed
-      torontoDate.setDate(day);
-      torontoDate.setHours(hour);
-      torontoDate.setMinutes(minute);
-      torontoDate.setSeconds(0);
-      torontoDate.setMilliseconds(0);
-
-      // Adjust for timezone offset
-      const offsetMs = this.getTorontoOffsetMs(torontoDate);
-      return new Date(torontoDate.getTime() - offsetMs);
-    } catch (error) {
-      console.error("Error parsing from input:", error);
-      return new Date();
-    }
+  static formatTorontoDate(utcDateLike: string | Date | null): string {
+    return this.formatToronto(utcDateLike, "MMMM d, yyyy");
   }
 
   /**
-   * Get Toronto timezone offset in milliseconds
+   * Format time only (no date) for display in Toronto timezone
+   * @param utcDateLike - UTC date from API
+   * @returns Formatted time string
    */
-  private static getTorontoOffsetMs(date: Date): number {
-    const utc = new Date(date.getTime() + date.getTimezoneOffset() * 60000);
-    const torontoTime = new Date(
-      utc.toLocaleString("en-US", { timeZone: this.TIMEZONE })
-    );
-    return torontoTime.getTime() - date.getTime();
+  static formatTorontoTime(utcDateLike: string | Date | null): string {
+    return this.formatToronto(utcDateLike, "h:mm a");
+  }
+
+  /**
+   * Get current date/time in Toronto timezone
+   * @returns DateTime object in Toronto timezone
+   */
+  static getCurrentTorontoTime(): DateTime {
+    return DateTime.now().setZone(this.TIMEZONE);
+  }
+
+  /**
+   * Check if a date is in Daylight Saving Time
+   * @param date - Date to check (defaults to current time)
+   * @returns true if DST is active
+   */
+  static isDST(date?: Date): boolean {
+    const dt = date
+      ? DateTime.fromJSDate(date, { zone: this.TIMEZONE })
+      : DateTime.now().setZone(this.TIMEZONE);
+    return dt.isInDST;
+  }
+
+  /**
+   * Get timezone info for a given date
+   * @param date - Date to get timezone info for (defaults to current time)
+   * @returns Object with timezone information
+   */
+  static getTimezoneInfo(date?: Date): {
+    timezone: string;
+    abbreviation: string;
+    offset: string;
+    isDST: boolean;
+  } {
+    const dt = date
+      ? DateTime.fromJSDate(date, { zone: this.TIMEZONE })
+      : DateTime.now().setZone(this.TIMEZONE);
+
+    return {
+      timezone: this.TIMEZONE,
+      abbreviation: dt.offsetNameShort || "ET",
+      offset: dt.toFormat("ZZ"),
+      isDST: dt.isInDST,
+    };
+  }
+
+  /**
+   * Format current Toronto time for display in clock
+   * @returns Formatted time string with date
+   */
+  static formatCurrentTime(): string {
+    return this.getCurrentTorontoTime().toFormat("EEE, MMM d, yyyy h:mm:ss a");
+  }
+
+  /**
+   * Get short timezone abbreviation (EST/EDT)
+   * @returns Timezone abbreviation
+   */
+  static getTimezoneAbbr(): string {
+    const dt = DateTime.now().setZone(this.TIMEZONE);
+    return dt.offsetNameShort || "ET";
   }
 
   /**

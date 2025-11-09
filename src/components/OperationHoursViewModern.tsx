@@ -35,6 +35,7 @@ import { operationHourService } from "../services/api";
 import type { OperationHour, PaginatedResponse } from "../services/api";
 import { ModernTable } from "./ModernTables";
 import { ConfirmDialog } from "./ConfirmDialog";
+import { AdminTimeUtil } from "../utils/timezone-luxon";
 
 interface OperationHoursViewModernProps {
   userRole: "admin" | "superadmin";
@@ -263,14 +264,17 @@ const OperationHoursViewModern: React.FC<OperationHoursViewModernProps> = ({
   };
 
   const formatTime = (time: string) => {
+    // time is expected as HH:mm in Toronto local time
     if (!time) return "Not set";
     try {
-      const [hours, minutes] = time.split(":");
-      const hour = parseInt(hours, 10);
-      const ampm = hour >= 12 ? "PM" : "AM";
-      const displayHour = hour % 12 || 12;
-
-      return `${displayHour}:${minutes} ${ampm}`;
+      const [h, m] = time.split(":").map(Number);
+      const dt = AdminTimeUtil.nowToronto().set({
+        hour: h,
+        minute: m,
+        second: 0,
+        millisecond: 0,
+      });
+      return dt.toFormat("h:mm a");
     } catch (error) {
       console.error("Error formatting time:", error);
       return time;
@@ -283,15 +287,10 @@ const OperationHoursViewModern: React.FC<OperationHoursViewModernProps> = ({
     openTime: string,
     closeTime: string
   ) => {
-    const now = new Date();
-    // Get current time in Toronto timezone
-    const torontoTime = new Date(
-      now.toLocaleString("en-US", { timeZone: "America/Toronto" })
-    );
-    const currentTime = torontoTime.toTimeString().slice(0, 5); // HH:MM format
+    // Use Luxon in Toronto timezone, respecting DST
+    const nowTor = AdminTimeUtil.nowToronto();
 
-    // Map JavaScript day to our day format
-    const days = [
+    const days: string[] = [
       "sunday",
       "monday",
       "tuesday",
@@ -300,52 +299,49 @@ const OperationHoursViewModern: React.FC<OperationHoursViewModernProps> = ({
       "friday",
       "saturday",
     ];
-    const todayDay = days[torontoTime.getDay()];
 
-    // Convert times to minutes for comparison
-    const timeToMinutes = (time: string) => {
-      const [hours, minutes] = time.split(":").map(Number);
-      return hours * 60 + minutes;
-    };
+    // Luxon weekday: 1 (Mon) .. 7 (Sun)
+    const weekdayIndex = nowTor.weekday % 7; // 0 for Sunday, 1..6 for others
 
-    const currentMinutes = timeToMinutes(currentTime);
-    const openMinutes = timeToMinutes(openTime);
-    const closeMinutes = timeToMinutes(closeTime);
+    const [openH, openM] = openTime.split(":").map(Number);
+    const [closeH, closeM] = closeTime.split(":").map(Number);
+    if (Number.isNaN(openH) || Number.isNaN(closeH)) return false;
 
-    // Handle overnight hours (e.g., Saturday 8:30 PM to Sunday 11:30 AM)
-    if (closeMinutes < openMinutes) {
-      // Check if we're on the day that starts the overnight shift
-      if (day.toLowerCase() === todayDay && currentMinutes >= openMinutes) {
-        return true;
-      }
+    const openDT = nowTor.set({
+      hour: openH,
+      minute: openM,
+      second: 0,
+      millisecond: 0,
+    });
+    let closeDT = nowTor.set({
+      hour: closeH,
+      minute: closeM,
+      second: 0,
+      millisecond: 0,
+    });
 
-      // Check if we're on the next day before closing time
-      const dayNames = [
-        "sunday",
-        "monday",
-        "tuesday",
-        "wednesday",
-        "thursday",
-        "friday",
-        "saturday",
-      ];
-      const dayIndex = dayNames.indexOf(day.toLowerCase());
-      const nextDayIndex = (dayIndex + 1) % 7;
-      const nextDay = dayNames[nextDayIndex];
-
-      if (todayDay === nextDay && currentMinutes <= closeMinutes) {
-        return true;
-      }
-
-      return false;
+    // Overnight case: close occurs next day
+    if (closeDT <= openDT) {
+      closeDT = closeDT.plus({ days: 1 });
     }
 
-    // Regular hours (same day) - check if it's the correct day
-    if (day.toLowerCase() !== todayDay) {
-      return false;
+    const givenIndex = days.indexOf(day.toLowerCase());
+    if (givenIndex === -1) return false;
+    const nextIndex = (givenIndex + 1) % 7;
+    const isSameDay = weekdayIndex === givenIndex;
+    const isNextDayForOvernight =
+      weekdayIndex === nextIndex && closeDT > openDT;
+
+    if (!isSameDay && !isNextDayForOvernight) return false;
+
+    // If we are on the next day for an overnight schedule, shift start back one day
+    let start = openDT;
+    const end = closeDT;
+    if (isNextDayForOvernight && !isSameDay) {
+      start = openDT.minus({ days: 1 });
     }
 
-    return currentMinutes >= openMinutes && currentMinutes <= closeMinutes;
+    return nowTor >= start && nowTor <= end && !!openTime && !!closeTime;
   };
 
   const formatDay = (day: string) => {
@@ -437,28 +433,14 @@ const OperationHoursViewModern: React.FC<OperationHoursViewModernProps> = ({
       label: "Created",
       minWidth: 150,
       format: (value: any) =>
-        new Date(value).toLocaleDateString("en-CA", {
-          year: "numeric",
-          month: "short",
-          day: "numeric",
-          hour: "2-digit",
-          minute: "2-digit",
-          timeZone: "America/Toronto",
-        }),
+        AdminTimeUtil.formatToronto(value, "MMM d, yyyy h:mm a"),
     },
     {
       id: "updated_at",
       label: "Last Updated",
       minWidth: 150,
       format: (value: any) =>
-        new Date(value).toLocaleDateString("en-CA", {
-          year: "numeric",
-          month: "short",
-          day: "numeric",
-          hour: "2-digit",
-          minute: "2-digit",
-          timeZone: "America/Toronto",
-        }),
+        AdminTimeUtil.formatToronto(value, "MMM d, yyyy h:mm a"),
     },
   ];
 

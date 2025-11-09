@@ -256,6 +256,39 @@ export class AdminTimeUtil {
       return false;
     }
   }
+
+  /**
+   * Format current Toronto time for display in clock
+   * @returns Formatted time string with date
+   */
+  static formatCurrentTime(): string {
+    return this.nowToronto().toFormat("EEE, MMM d, yyyy h:mm:ss a");
+  }
+
+  /**
+   * Get short timezone abbreviation (EST/EDT)
+   * @returns Timezone abbreviation
+   */
+  static getTimezoneAbbr(): string {
+    const dt = DateTime.now().setZone(this.TIMEZONE);
+    return dt.offsetNameShort || "ET";
+  }
+
+  /**
+   * Format for compact clock display
+   * @returns Formatted time string
+   */
+  static formatCompactTime(): string {
+    return this.nowToronto().toFormat("h:mm:ss a");
+  }
+
+  /**
+   * Format for full clock display with date
+   * @returns Formatted time string with full date
+   */
+  static formatFullDateTime(): string {
+    return this.nowToronto().toFormat("EEEE, MMMM d, yyyy - h:mm:ss a");
+  }
 }
 
 // Keep backward compatibility with old class name

@@ -51,6 +51,7 @@ import { WingSaucesView } from "./WingSaucesView";
 import { SubstituteSidesView } from "./SubstituteSidesView";
 import StoriesViewModern from "./StoriesViewModern";
 import { authService } from "../services/api";
+import TorontoClock from "./TorontoClock";
 
 const drawerWidth = 280;
 
@@ -514,8 +515,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               }}
             ></Typography>
 
-            {/* Right side - Theme toggle and Profile */}
-            <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+            {/* Right side - Toronto Clock, Theme toggle and Profile */}
+            <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+              {/* Toronto Time Clock */}
+              <TorontoClock />
+
               <IconButton
                 onClick={toggleTheme}
                 sx={{

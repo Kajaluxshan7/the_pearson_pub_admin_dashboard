@@ -1,13 +1,10 @@
-version: '3.9'
-
 services:
   frontend:
-    build: .
-    ports:
-      - "3002:3002"
+    build:
+      context: .
+      dockerfile: Dockerfile
     environment:
-      - NODE_ENV=development
-    volumes:
-      - .:/app
-      - /app/node_modules
-    command: npm run dev -- --port 3002 --host 0.0.0.0
+      - NODE_ENV=production
+    ports:
+      - "127.0.0.1:3002:3002"   # bind only to localhost
+    restart: unless-stopped
