@@ -45,6 +45,19 @@ api.interceptors.response.use(
 
 // Helper function to convert technical errors to user-friendly messages
 function getUserFriendlyErrorMessage(message: string): string {
+  // Handle array of messages (e.g., NestJS validation errors)
+  if (Array.isArray(message)) {
+    return message
+      .map((m) => (typeof m === "string" ? m : JSON.stringify(m)))
+      .join("; ");
+  }
+  // Handle object messages
+  if (typeof message === "object" && message !== null) {
+    return JSON.stringify(message);
+  }
+  if (typeof message !== "string") {
+    return String(message);
+  }
   const lowerMessage = message.toLowerCase();
 
   if (
@@ -111,6 +124,7 @@ export interface Category {
   id: string;
   name: string;
   description?: string;
+  display_order: number;
   lastEditedByAdminId?: string;
   lastEditedByAdmin?: Admin;
   created_at: string;
@@ -131,6 +145,7 @@ export interface Item {
   availability: boolean;
   visibility: boolean;
   is_favourite: boolean;
+  display_order: number;
   lastEditedByAdminId?: string;
   lastEditedByAdmin?: Admin;
   created_at: string;
@@ -193,6 +208,8 @@ export interface Special {
   image_urls?: string[]; // Support for multiple images
   seasonal_start_datetime?: string; // ISO timestamp for seasonal specials
   seasonal_end_datetime?: string; // ISO timestamp for seasonal specials
+  display_start_time?: string; // ISO timestamp for when special becomes visible
+  display_end_time?: string; // ISO timestamp for when special stops being visible
   lastEditedByAdminId: string;
   lastEditedByAdmin?: Admin;
   created_at: string;
@@ -348,6 +365,9 @@ export const categoryService = {
     api.delete(`/categories/${id}`).then((res) => res.data),
   getCount: (): Promise<number> =>
     api.get("/categories/count").then((res) => res.data),
+
+  reorder: (categoryIds: string[]): Promise<{ message: string }> =>
+    api.post("/categories/reorder", { categoryIds }).then((res) => res.data),
 };
 
 export const itemService = {
@@ -373,6 +393,9 @@ export const itemService = {
     api.delete(`/items/${id}`).then((res) => res.data),
   getCount: (): Promise<number> =>
     api.get("/items/count").then((res) => res.data),
+
+  reorder: (itemIds: string[]): Promise<{ message: string }> =>
+    api.post("/items/reorder", { itemIds }).then((res) => res.data),
 
   // Image upload and management methods
   uploadImages: (

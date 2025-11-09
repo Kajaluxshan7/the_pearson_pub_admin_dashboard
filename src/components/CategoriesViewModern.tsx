@@ -19,6 +19,9 @@ import {
   Category as CategoryIcon,
   Description,
   FilterList,
+  SwapVert,
+  ArrowUpward,
+  ArrowDownward,
 } from "@mui/icons-material";
 import { motion } from "framer-motion";
 import { categoryService, type Category } from "../services/api";
@@ -40,11 +43,12 @@ export const CategoriesView: React.FC = () => {
   const [page, setPage] = useState(0);
   const [pageSize, setPageSize] = useState(5);
   const [searchQuery, setSearchQuery] = useState("");
-  
+
   // Dialog states
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [viewDialogOpen, setViewDialogOpen] = useState(false);
+  const [reorderDialogOpen, setReorderDialogOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(
     null
   );
@@ -52,6 +56,7 @@ export const CategoriesView: React.FC = () => {
     name: "",
     description: "",
   });
+  const [reorderList, setReorderList] = useState<Category[]>([]);
 
   // Confirm dialog state
   const [confirmDialog, setConfirmDialog] = useState({
@@ -132,7 +137,8 @@ export const CategoriesView: React.FC = () => {
       id: "updated_at",
       label: "Last Updated",
       minWidth: 130,
-      format: (value: string | number | Date) => new Date(value).toLocaleDateString(),
+      format: (value: string | number | Date) =>
+        new Date(value).toLocaleDateString(),
     },
   ];
   const handleView = (category: Category) => {
@@ -176,7 +182,7 @@ export const CategoriesView: React.FC = () => {
         showWarning("Category name is required");
         return;
       }
-      
+
       await categoryService.create({
         name: formData.name,
         description: formData.description,
@@ -197,12 +203,12 @@ export const CategoriesView: React.FC = () => {
         showWarning("No category selected for update");
         return;
       }
-      
+
       if (!formData.name.trim()) {
         showWarning("Category name is required");
         return;
       }
-      
+
       await categoryService.update(selectedCategory.id, {
         name: formData.name,
         description: formData.description,
@@ -213,6 +219,49 @@ export const CategoriesView: React.FC = () => {
       fetchCategories();
     } catch (error) {
       console.error("Error updating category:", error);
+      showError(error as Error);
+    }
+  };
+
+  const handleOpenReorder = async () => {
+    try {
+      // Fetch all categories without pagination for reordering
+      const response = await categoryService.getAll(1, 999);
+      // Sort by display_order
+      const sorted = [...response.data].sort(
+        (a, b) => (a.display_order || 0) - (b.display_order || 0)
+      );
+      setReorderList(sorted);
+      setReorderDialogOpen(true);
+    } catch (error) {
+      console.error("Error fetching categories for reorder:", error);
+      showError(error as Error);
+    }
+  };
+
+  const handleMoveUp = (index: number) => {
+    if (index === 0) return;
+    const newList = [...reorderList];
+    [newList[index - 1], newList[index]] = [newList[index], newList[index - 1]];
+    setReorderList(newList);
+  };
+
+  const handleMoveDown = (index: number) => {
+    if (index === reorderList.length - 1) return;
+    const newList = [...reorderList];
+    [newList[index], newList[index + 1]] = [newList[index + 1], newList[index]];
+    setReorderList(newList);
+  };
+
+  const handleSaveReorder = async () => {
+    try {
+      const orderedIds = reorderList.map((cat) => cat.id);
+      await categoryService.reorder(orderedIds);
+      showSuccess("Categories reordered successfully");
+      setReorderDialogOpen(false);
+      fetchCategories();
+    } catch (error) {
+      console.error("Error reordering categories:", error);
       showError(error as Error);
     }
   };
@@ -251,25 +300,48 @@ export const CategoriesView: React.FC = () => {
             Category Management
           </Typography>
 
-          <Button
-            variant="contained"
-            startIcon={<Add />}
-            onClick={() => setAddDialogOpen(true)}
-            sx={{
-              borderRadius: 3,
-              px: 3,
-              py: 1.5,
-              background: `linear-gradient(135deg, ${theme.palette.primary.main}, ${theme.palette.primary.dark})`,
-              "&:hover": {
-                background: `linear-gradient(135deg, ${theme.palette.primary.dark}, ${theme.palette.primary.main})`,
-                transform: "translateY(-2px)",
-                boxShadow: theme.shadows[8],
-              },
-              transition: "all 0.3s ease",
-            }}
-          >
-            Add Category
-          </Button>
+          <Box sx={{ display: "flex", gap: 2 }}>
+            <Button
+              variant="outlined"
+              startIcon={<SwapVert />}
+              onClick={handleOpenReorder}
+              sx={{
+                borderRadius: 3,
+                px: 3,
+                py: 1.5,
+                borderColor: theme.palette.primary.main,
+                color: theme.palette.primary.main,
+                "&:hover": {
+                  borderColor: theme.palette.primary.dark,
+                  backgroundColor: theme.palette.primary.light,
+                  transform: "translateY(-2px)",
+                  boxShadow: theme.shadows[4],
+                },
+                transition: "all 0.3s ease",
+              }}
+            >
+              Reorder
+            </Button>
+            <Button
+              variant="contained"
+              startIcon={<Add />}
+              onClick={() => setAddDialogOpen(true)}
+              sx={{
+                borderRadius: 3,
+                px: 3,
+                py: 1.5,
+                background: `linear-gradient(135deg, ${theme.palette.primary.main}, ${theme.palette.primary.dark})`,
+                "&:hover": {
+                  background: `linear-gradient(135deg, ${theme.palette.primary.dark}, ${theme.palette.primary.main})`,
+                  transform: "translateY(-2px)",
+                  boxShadow: theme.shadows[8],
+                },
+                transition: "all 0.3s ease",
+              }}
+            >
+              Add Category
+            </Button>
+          </Box>
         </Box>
         {/* Filters */}
         <Paper sx={{ p: 3, mb: 3, borderRadius: 3 }}>
@@ -496,7 +568,7 @@ export const CategoriesView: React.FC = () => {
             </Button>
           </DialogActions>
         </Dialog>{" "}
-  {/* Snackbar removed: now using notification system via useNotification */}
+        {/* Snackbar removed: now using notification system via useNotification */}
         {/* View Category Dialog */}
         <Dialog
           open={viewDialogOpen}
@@ -587,6 +659,90 @@ export const CategoriesView: React.FC = () => {
             </Button>
           </DialogActions>
         </Dialog>{" "}
+        {/* Reorder Categories Dialog */}
+        <Dialog
+          open={reorderDialogOpen}
+          onClose={() => setReorderDialogOpen(false)}
+          maxWidth="sm"
+          fullWidth
+          PaperProps={{
+            sx: { borderRadius: 3 },
+          }}
+        >
+          <DialogTitle sx={{ pb: 1 }}>
+            <Typography variant="h5" fontWeight={600}>
+              Reorder Categories
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+              Use the arrow buttons to change the display order
+            </Typography>
+          </DialogTitle>
+          <DialogContent sx={{ pt: 2 }}>
+            <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
+              {reorderList.map((category, index) => (
+                <Paper
+                  key={category.id}
+                  sx={{
+                    p: 2,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    borderRadius: 2,
+                    border: "1px solid",
+                    borderColor: "divider",
+                  }}
+                >
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+                    <Typography
+                      variant="body2"
+                      color="text.secondary"
+                      sx={{ minWidth: 30 }}
+                    >
+                      #{index + 1}
+                    </Typography>
+                    <CategoryIcon color="primary" />
+                    <Typography variant="body1" fontWeight={500}>
+                      {category.name}
+                    </Typography>
+                  </Box>
+                  <Box sx={{ display: "flex", gap: 1 }}>
+                    <Button
+                      size="small"
+                      onClick={() => handleMoveUp(index)}
+                      disabled={index === 0}
+                      sx={{ minWidth: 40 }}
+                    >
+                      <ArrowUpward fontSize="small" />
+                    </Button>
+                    <Button
+                      size="small"
+                      onClick={() => handleMoveDown(index)}
+                      disabled={index === reorderList.length - 1}
+                      sx={{ minWidth: 40 }}
+                    >
+                      <ArrowDownward fontSize="small" />
+                    </Button>
+                  </Box>
+                </Paper>
+              ))}
+            </Box>
+          </DialogContent>
+          <DialogActions sx={{ p: 3, pt: 2 }}>
+            <Button
+              onClick={() => setReorderDialogOpen(false)}
+              sx={{ borderRadius: 2 }}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleSaveReorder}
+              variant="contained"
+              sx={{ borderRadius: 2, px: 3 }}
+            >
+              Save Order
+            </Button>
+          </DialogActions>
+        </Dialog>
         {/* Confirm Dialog */}
         <ConfirmDialog
           open={confirmDialog.open}

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
+import { AxiosError } from "axios";
 import {
   Box,
   Typography,
@@ -62,6 +63,8 @@ interface SpecialsFormData {
   description: string;
   seasonal_start_date: string;
   seasonal_end_date: string;
+  display_start_time: string;
+  display_end_time: string;
   images: string[];
   removeImages: string[]; // Track individual existing images to be removed
 }
@@ -113,6 +116,8 @@ export const SpecialsView: React.FC = () => {
     description: "",
     seasonal_start_date: "",
     seasonal_end_date: "",
+    display_start_time: "",
+    display_end_time: "",
     images: [],
     removeImages: [],
   });
@@ -142,9 +147,20 @@ export const SpecialsView: React.FC = () => {
       setLoading(true);
       const response = await specialsService.getAll(1, 100);
       setSpecials(response.data);
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error fetching specials:", error);
-      showSnackbar("Error fetching specials", "error");
+
+      // Extract user-friendly error message from the error response
+      let errorMessage = "Error fetching specials";
+      if (error instanceof AxiosError && error.response?.data?.userMessage) {
+        errorMessage = error.response.data.userMessage;
+      } else if (error instanceof AxiosError && error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error instanceof Error) {
+        errorMessage = error.message;
+      }
+
+      showSnackbar(errorMessage, "error");
     } finally {
       setLoading(false);
     }
@@ -283,6 +299,12 @@ export const SpecialsView: React.FC = () => {
       seasonal_end_date: special.seasonal_end_datetime
         ? AdminTimeUtil.formatForDateTimeInput(special.seasonal_end_datetime) // Toronto timezone format
         : "",
+      display_start_time: special.display_start_time
+        ? AdminTimeUtil.formatForDateTimeInput(special.display_start_time) // Toronto timezone format
+        : "",
+      display_end_time: special.display_end_time
+        ? AdminTimeUtil.formatForDateTimeInput(special.display_end_time) // Toronto timezone format
+        : "",
       images: existingImages, // Show existing images
       removeImages: [], // Initialize empty array for images to remove
     });
@@ -327,9 +349,20 @@ export const SpecialsView: React.FC = () => {
       await specialsService.delete(id);
       showSnackbar("Special deleted successfully", "success");
       fetchSpecials();
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error deleting special:", error);
-      showSnackbar("Error deleting special", "error");
+
+      // Extract user-friendly error message from the error response
+      let errorMessage = "Error deleting special";
+      if (error instanceof AxiosError && error.response?.data?.userMessage) {
+        errorMessage = error.response.data.userMessage;
+      } else if (error instanceof AxiosError && error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error instanceof Error) {
+        errorMessage = error.message;
+      }
+
+      showSnackbar(errorMessage, "error");
     }
     setConfirmDialog({ ...confirmDialog, open: false });
   };
@@ -378,6 +411,12 @@ export const SpecialsView: React.FC = () => {
           seasonal_end_datetime: formData.seasonal_end_date
             ? AdminTimeUtil.parseFromDateTimeInput(formData.seasonal_end_date)
             : undefined,
+          display_start_time: formData.display_start_time
+            ? AdminTimeUtil.parseFromDateTimeInput(formData.display_start_time)
+            : undefined,
+          display_end_time: formData.display_end_time
+            ? AdminTimeUtil.parseFromDateTimeInput(formData.display_end_time)
+            : undefined,
         };
       } else if (formData.special_type === "latenight") {
         saveData = baseData;
@@ -416,9 +455,20 @@ export const SpecialsView: React.FC = () => {
       setEditDialogOpen(false);
       resetForm();
       await fetchSpecials(); // Refresh the specials list
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("❌ Frontend - Error saving special:", error);
-      showSnackbar("Error saving special", "error");
+
+      // Extract user-friendly error message from the error response
+      let errorMessage = "Error saving special";
+      if (error instanceof AxiosError && error.response?.data?.userMessage) {
+        errorMessage = error.response.data.userMessage;
+      } else if (error instanceof AxiosError && error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error instanceof Error) {
+        errorMessage = error.message;
+      }
+
+      showSnackbar(errorMessage, "error");
     }
   };
 
@@ -537,6 +587,8 @@ export const SpecialsView: React.FC = () => {
       description: "",
       seasonal_start_date: "",
       seasonal_end_date: "",
+      display_start_time: "",
+      display_end_time: "",
       images: [],
       removeImages: [],
     });
@@ -1422,6 +1474,40 @@ export const SpecialsView: React.FC = () => {
                       }
                       InputLabelProps={{ shrink: true }}
                       sx={{ "& .MuiOutlinedInput-root": { borderRadius: 2 } }}
+                    />
+                  </Grid>
+                  <Grid item xs={12} md={6}>
+                    <TextField
+                      fullWidth
+                      label="Display Start Time (Optional)"
+                      type="datetime-local"
+                      value={formData.display_start_time}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          display_start_time: e.target.value,
+                        })
+                      }
+                      InputLabelProps={{ shrink: true }}
+                      sx={{ "& .MuiOutlinedInput-root": { borderRadius: 2 } }}
+                      helperText="When this special becomes visible to users"
+                    />
+                  </Grid>
+                  <Grid item xs={12} md={6}>
+                    <TextField
+                      fullWidth
+                      label="Display End Time (Optional)"
+                      type="datetime-local"
+                      value={formData.display_end_time}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          display_end_time: e.target.value,
+                        })
+                      }
+                      InputLabelProps={{ shrink: true }}
+                      sx={{ "& .MuiOutlinedInput-root": { borderRadius: 2 } }}
+                      helperText="When this special stops being visible to users"
                     />
                   </Grid>
                 </>

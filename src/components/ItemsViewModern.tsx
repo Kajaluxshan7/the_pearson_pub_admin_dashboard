@@ -33,6 +33,9 @@ import {
   PhotoCamera,
   Update,
   CalendarToday,
+  SwapVert,
+  ArrowUpward,
+  ArrowDownward,
 } from "@mui/icons-material";
 import { motion } from "framer-motion";
 import {
@@ -68,7 +71,10 @@ export const ItemsView: React.FC = () => {
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [viewDialogOpen, setViewDialogOpen] = useState(false);
+  const [reorderDialogOpen, setReorderDialogOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<Item | null>(null);
+  const [reorderList, setReorderList] = useState<Item[]>([]);
+  const [reorderCategory, setReorderCategory] = useState<string>("");
   const [formData, setFormData] = useState({
     name: "",
     description: "",
@@ -361,6 +367,62 @@ export const ItemsView: React.FC = () => {
     setSelectedItem(null);
     setImageFiles([]);
     setImagePreviews([]);
+  };
+
+  const handleOpenReorder = () => {
+    if (categories.length === 0) {
+      showError("No categories available");
+      return;
+    }
+    // Pre-select first category or the currently filtered category
+    const defaultCategory =
+      categoryFilter !== "all" ? categoryFilter : categories[0].id;
+    setReorderCategory(defaultCategory);
+    handleCategorySelectForReorder(defaultCategory);
+    setReorderDialogOpen(true);
+  };
+
+  const handleCategorySelectForReorder = async (catId: string) => {
+    try {
+      setReorderCategory(catId);
+      // Fetch all items for this category
+      const response = await itemService.getAll(1, 999, { categoryId: catId });
+      // Sort by display_order
+      const sorted = [...response.data].sort(
+        (a, b) => (a.display_order || 0) - (b.display_order || 0)
+      );
+      setReorderList(sorted);
+    } catch (error) {
+      console.error("Error fetching items for reorder:", error);
+      showError(new Error(getErrorMessage(error)));
+    }
+  };
+
+  const handleMoveUp = (index: number) => {
+    if (index === 0) return;
+    const newList = [...reorderList];
+    [newList[index - 1], newList[index]] = [newList[index], newList[index - 1]];
+    setReorderList(newList);
+  };
+
+  const handleMoveDown = (index: number) => {
+    if (index === reorderList.length - 1) return;
+    const newList = [...reorderList];
+    [newList[index], newList[index + 1]] = [newList[index + 1], newList[index]];
+    setReorderList(newList);
+  };
+
+  const handleSaveReorder = async () => {
+    try {
+      const orderedIds = reorderList.map((item) => item.id);
+      await itemService.reorder(orderedIds);
+      showSuccess("Items reordered successfully");
+      setReorderDialogOpen(false);
+      fetchItems();
+    } catch (error) {
+      console.error("Error reordering items:", error);
+      showError(new Error(getErrorMessage(error)));
+    }
   };
 
   // Image handling functions
@@ -782,28 +844,51 @@ export const ItemsView: React.FC = () => {
           >
             Menu Items Management
           </Typography>{" "}
-          <Button
-            variant="contained"
-            startIcon={<Add />}
-            onClick={() => {
-              resetForm();
-              setAddDialogOpen(true);
-            }}
-            sx={{
-              borderRadius: 3,
-              px: 3,
-              py: 1.5,
-              background: `linear-gradient(135deg, ${theme.palette.primary.main}, ${theme.palette.primary.dark})`,
-              "&:hover": {
-                background: `linear-gradient(135deg, ${theme.palette.primary.dark}, ${theme.palette.primary.main})`,
-                transform: "translateY(-2px)",
-                boxShadow: theme.shadows[8],
-              },
-              transition: "all 0.3s ease",
-            }}
-          >
-            Add Item
-          </Button>
+          <Box sx={{ display: "flex", gap: 2 }}>
+            <Button
+              variant="outlined"
+              startIcon={<SwapVert />}
+              onClick={handleOpenReorder}
+              sx={{
+                borderRadius: 3,
+                px: 3,
+                py: 1.5,
+                borderColor: theme.palette.primary.main,
+                color: theme.palette.primary.main,
+                "&:hover": {
+                  borderColor: theme.palette.primary.dark,
+                  backgroundColor: theme.palette.primary.light,
+                  transform: "translateY(-2px)",
+                  boxShadow: theme.shadows[4],
+                },
+                transition: "all 0.3s ease",
+              }}
+            >
+              Reorder
+            </Button>
+            <Button
+              variant="contained"
+              startIcon={<Add />}
+              onClick={() => {
+                resetForm();
+                setAddDialogOpen(true);
+              }}
+              sx={{
+                borderRadius: 3,
+                px: 3,
+                py: 1.5,
+                background: `linear-gradient(135deg, ${theme.palette.primary.main}, ${theme.palette.primary.dark})`,
+                "&:hover": {
+                  background: `linear-gradient(135deg, ${theme.palette.primary.dark}, ${theme.palette.primary.main})`,
+                  transform: "translateY(-2px)",
+                  boxShadow: theme.shadows[8],
+                },
+                transition: "all 0.3s ease",
+              }}
+            >
+              Add Item
+            </Button>
+          </Box>
         </Box>
         {/* Filters */}
         <Paper sx={{ p: 3, mb: 3, borderRadius: 3 }}>
@@ -1240,6 +1325,107 @@ export const ItemsView: React.FC = () => {
             >
               Close
             </Button>{" "}
+          </DialogActions>
+        </Dialog>
+        {/* Reorder Items Dialog */}
+        <Dialog
+          open={reorderDialogOpen}
+          onClose={() => setReorderDialogOpen(false)}
+          maxWidth="sm"
+          fullWidth
+          PaperProps={{
+            sx: { borderRadius: 3 },
+          }}
+        >
+          <DialogTitle sx={{ pb: 1 }}>
+            <Typography variant="h5" fontWeight={600}>
+              Reorder Items
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+              Select a category and use the arrow buttons to change the display
+              order
+            </Typography>
+          </DialogTitle>
+          <DialogContent sx={{ pt: 2 }}>
+            <FormControl fullWidth sx={{ mb: 3 }}>
+              <InputLabel>Category</InputLabel>
+              <Select
+                value={reorderCategory}
+                onChange={(e) => handleCategorySelectForReorder(e.target.value)}
+                label="Category"
+                sx={{ borderRadius: 2 }}
+              >
+                {categories.map((category) => (
+                  <MenuItem key={category.id} value={category.id}>
+                    {category.name}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+            <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
+              {reorderList.map((item, index) => (
+                <Paper
+                  key={item.id}
+                  sx={{
+                    p: 2,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    borderRadius: 2,
+                    border: "1px solid",
+                    borderColor: "divider",
+                  }}
+                >
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+                    <Typography
+                      variant="body2"
+                      color="text.secondary"
+                      sx={{ minWidth: 30 }}
+                    >
+                      #{index + 1}
+                    </Typography>
+                    <Restaurant color="primary" />
+                    <Typography variant="body1" fontWeight={500}>
+                      {item.name}
+                    </Typography>
+                  </Box>
+                  <Box sx={{ display: "flex", gap: 1 }}>
+                    <Button
+                      size="small"
+                      onClick={() => handleMoveUp(index)}
+                      disabled={index === 0}
+                      sx={{ minWidth: 40 }}
+                    >
+                      <ArrowUpward fontSize="small" />
+                    </Button>
+                    <Button
+                      size="small"
+                      onClick={() => handleMoveDown(index)}
+                      disabled={index === reorderList.length - 1}
+                      sx={{ minWidth: 40 }}
+                    >
+                      <ArrowDownward fontSize="small" />
+                    </Button>
+                  </Box>
+                </Paper>
+              ))}
+            </Box>
+          </DialogContent>
+          <DialogActions sx={{ p: 3, pt: 2 }}>
+            <Button
+              onClick={() => setReorderDialogOpen(false)}
+              sx={{ borderRadius: 2 }}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleSaveReorder}
+              variant="contained"
+              disabled={reorderList.length === 0}
+              sx={{ borderRadius: 2, px: 3 }}
+            >
+              Save Order
+            </Button>
           </DialogActions>
         </Dialog>
         {/* Confirm Delete Dialog */}

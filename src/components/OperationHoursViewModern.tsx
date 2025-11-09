@@ -205,11 +205,13 @@ const OperationHoursViewModern: React.FC<OperationHoursViewModernProps> = ({
 
   const handleToggleStatus = async (hour: OperationHour) => {
     try {
+      // Only send allowed fields to backend
       const updatedHour = {
-        ...hour,
+        day: hour.day,
+        open_time: hour.open_time,
+        close_time: hour.close_time,
         status: !hour.status,
       };
-
       await operationHourService.update(hour.id, updatedHour);
       showAlert(
         "success",
@@ -301,7 +303,8 @@ const OperationHoursViewModern: React.FC<OperationHoursViewModernProps> = ({
     ];
 
     // Luxon weekday: 1 (Mon) .. 7 (Sun)
-    const weekdayIndex = nowTor.weekday % 7; // 0 for Sunday, 1..6 for others
+    // Map to 0-based index: 0=Sunday, 1=Monday, ..., 6=Saturday
+    const weekdayIndex = nowTor.weekday % 7;
 
     const [openH, openM] = openTime.split(":").map(Number);
     const [closeH, closeM] = closeTime.split(":").map(Number);
@@ -321,27 +324,40 @@ const OperationHoursViewModern: React.FC<OperationHoursViewModernProps> = ({
     });
 
     // Overnight case: close occurs next day
+    let overnight = false;
     if (closeDT <= openDT) {
       closeDT = closeDT.plus({ days: 1 });
+      overnight = true;
     }
 
     const givenIndex = days.indexOf(day.toLowerCase());
     if (givenIndex === -1) return false;
-    const nextIndex = (givenIndex + 1) % 7;
-    const isSameDay = weekdayIndex === givenIndex;
-    const isNextDayForOvernight =
-      weekdayIndex === nextIndex && closeDT > openDT;
 
-    if (!isSameDay && !isNextDayForOvernight) return false;
-
-    // If we are on the next day for an overnight schedule, shift start back one day
-    let start = openDT;
-    const end = closeDT;
-    if (isNextDayForOvernight && !isSameDay) {
-      start = openDT.minus({ days: 1 });
+    // Only show open for the correct day:
+    // - If not overnight: only show open for the same day
+    // - If overnight: show open for the start day until 23:59, and for the next day after 00:00 until close
+    if (!overnight) {
+      if (weekdayIndex !== givenIndex) return false;
+      return nowTor >= openDT && nowTor <= closeDT && !!openTime && !!closeTime;
+    } else {
+      // overnight: openDT is on givenIndex, closeDT is on next day
+      const nextIndex = (givenIndex + 1) % 7;
+      if (weekdayIndex === givenIndex) {
+        // Only show open for the start day if now is after openDT and before midnight
+        const endOfDay = openDT.endOf("day");
+        return (
+          nowTor >= openDT && nowTor <= endOfDay && !!openTime && !!closeTime
+        );
+      } else if (weekdayIndex === nextIndex) {
+        // Only show open for the next day if now is after midnight and before closeDT
+        const startOfDay = closeDT.startOf("day");
+        return (
+          nowTor >= startOfDay && nowTor <= closeDT && !!openTime && !!closeTime
+        );
+      } else {
+        return false;
+      }
     }
-
-    return nowTor >= start && nowTor <= end && !!openTime && !!closeTime;
   };
 
   const formatDay = (day: string) => {

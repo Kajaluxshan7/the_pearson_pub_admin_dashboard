@@ -153,28 +153,6 @@ export class AdminTimezoneUtil {
   }
 
   /**
-   * Format date for display (date only)
-   */
-  static formatTorontoDate(date: string | Date): string {
-    return this.formatTorontoTime(date, {
-      hour: undefined,
-      minute: undefined,
-      hour12: undefined,
-    });
-  }
-
-  /**
-   * Format time for display (time only)
-   */
-  static formatTorontoTimeOnly(date: string | Date): string {
-    return this.formatTorontoTime(date, {
-      year: undefined,
-      month: undefined,
-      day: undefined,
-    });
-  }
-
-  /**
    * Get current time in Toronto timezone
    */
   static now(): Date {
@@ -182,17 +160,17 @@ export class AdminTimezoneUtil {
   }
 
   /**
+   * Format time for display (time only)
+   */
+  static formatTorontoTimeOnly(date: string | Date): string {
+    return this.formatToronto(date, "h:mm a");
+  }
+
+  /**
    * Format for data tables and lists
    */
   static formatForTable(date: string | Date): string {
-    return this.formatTorontoTime(date, {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-      hour12: true,
-    });
+    return this.formatToronto(date, "MMM d, yyyy h:mm a");
   }
 
   /**
@@ -216,9 +194,9 @@ export class AdminTimezoneUtil {
   }
 
   /**
-   * Get timezone information for display
+   * Get basic timezone information for display
    */
-  static getTimezoneInfo(): {
+  static getBasicTimezoneInfo(): {
     timezone: string;
     offset: string;
     abbreviation: string;
@@ -271,7 +249,7 @@ export class AdminTimezoneUtil {
     if (!dateTimeString) return false;
 
     try {
-      const parsed = this.parseFromInput(dateTimeString);
+      const parsed = new Date(dateTimeString);
       return !isNaN(parsed.getTime());
     } catch {
       return false;
@@ -322,8 +300,8 @@ export class AdminTimezoneUtil {
     startDate: string,
     endDate: string
   ): { start: Date; end: Date } {
-    const start = this.parseFromInput(`${startDate}T00:00`);
-    const end = this.parseFromInput(`${endDate}T23:59`);
+    const start = new Date(`${startDate}T00:00:00`);
+    const end = new Date(`${endDate}T23:59:59`);
 
     return { start, end };
   }
