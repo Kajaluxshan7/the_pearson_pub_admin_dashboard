@@ -11,6 +11,7 @@ import { AdminDashboard } from "./components/AdminDashboard";
 import { LoginPage } from "./pages/LoginPage";
 import SetupPassword from "./pages/SetupPassword";
 import { NotificationProvider } from "./contexts/NotificationContext";
+import { ErrorBoundary } from "./components/ErrorBoundary";
 
 const VITE_API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 const lightTheme = createTheme({
@@ -192,23 +193,25 @@ const App: React.FC = () => {
   };
 
   return (
-    <NotificationProvider>
-      <Router>
-        <Routes>
-          <Route
-            path="/*"
-            element={
-              <AppContent
-                isDarkMode={isDarkMode}
-                lightTheme={lightTheme}
-                darkTheme={darkTheme}
-                toggleTheme={toggleTheme}
-              />
-            }
-          />
-        </Routes>
-      </Router>
-    </NotificationProvider>
+    <ErrorBoundary>
+      <NotificationProvider>
+        <Router>
+          <Routes>
+            <Route
+              path="/*"
+              element={
+                <AppContent
+                  isDarkMode={isDarkMode}
+                  lightTheme={lightTheme}
+                  darkTheme={darkTheme}
+                  toggleTheme={toggleTheme}
+                />
+              }
+            />
+          </Routes>
+        </Router>
+      </NotificationProvider>
+    </ErrorBoundary>
   );
 };
 
