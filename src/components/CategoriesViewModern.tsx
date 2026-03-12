@@ -139,7 +139,7 @@ export const CategoriesView: React.FC = () => {
       label: "Last Updated",
       minWidth: 130,
       format: (value: string | number | Date) =>
-        AdminTimeUtil.formatTorontoDate(value),
+        AdminTimeUtil.formatTorontoDate(value as string),
     },
   ];
   const handleView = (category: Category) => {
