@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { AdminTimeUtil } from "../utils/timezone-luxon";
 import {
   Box,
   Typography,
@@ -187,7 +188,7 @@ export const SpecialsDayView: React.FC = () => {
       id: "created_at",
       label: "Created Date",
       minWidth: 150,
-      format: (value: any) => new Date(value).toLocaleDateString(),
+      format: (value: any) => AdminTimeUtil.formatTorontoDate(value),
     },
   ];
 
@@ -468,9 +469,7 @@ export const SpecialsDayView: React.FC = () => {
                           Created Date
                         </Typography>
                         <Typography variant="body1">
-                          {new Date(
-                            selectedSpecialsDay.created_at
-                          ).toLocaleDateString()}
+                          {AdminTimeUtil.formatTorontoDate(selectedSpecialsDay.created_at)}
                         </Typography>
                       </Grid>
                     </Grid>

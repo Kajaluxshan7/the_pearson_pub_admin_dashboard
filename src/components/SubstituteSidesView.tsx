@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { AdminTimeUtil } from "../utils/timezone-luxon";
 import {
   Box,
   Typography,
@@ -211,7 +212,7 @@ export const SubstituteSidesView: React.FC = () => {
       id: "created_at",
       label: "Created Date",
       minWidth: 150,
-      format: (value: any) => new Date(value).toLocaleDateString(),
+      format: (value: any) => AdminTimeUtil.formatTorontoDate(value),
     },
     {
       id: "lastEditedByAdmin",

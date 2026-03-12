@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { AdminTimeUtil } from "../utils/timezone-luxon";
 import {
   Box,
   Typography,
@@ -713,11 +714,7 @@ export const ItemsView: React.FC = () => {
         <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
           <CalendarToday sx={{ fontSize: 16, color: "text.secondary" }} />
           <Typography variant="body2" color="text.secondary">
-            {new Date(value).toLocaleDateString("en-US", {
-              month: "short",
-              day: "numeric",
-              year: "numeric",
-            })}
+            {AdminTimeUtil.formatTorontoDate(value)}
           </Typography>
         </Box>
       ),
@@ -730,11 +727,7 @@ export const ItemsView: React.FC = () => {
         <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
           <Update sx={{ fontSize: 16, color: "text.secondary" }} />
           <Typography variant="body2" color="text.secondary">
-            {new Date(value).toLocaleDateString("en-US", {
-              month: "short",
-              day: "numeric",
-              year: "numeric",
-            })}
+            {AdminTimeUtil.formatTorontoDate(value)}
           </Typography>
         </Box>
       ),
@@ -1307,11 +1300,11 @@ export const ItemsView: React.FC = () => {
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
                   <strong>Created:</strong>{" "}
-                  {new Date(selectedItem.created_at).toLocaleString()}
+                  {AdminTimeUtil.formatToronto(selectedItem.created_at)}
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
                   <strong>Last Updated:</strong>{" "}
-                  {new Date(selectedItem.updated_at).toLocaleString()}
+                  {AdminTimeUtil.formatToronto(selectedItem.updated_at)}
                 </Typography>
               </Box>
             )}

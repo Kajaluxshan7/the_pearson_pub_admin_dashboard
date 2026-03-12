@@ -16,7 +16,8 @@ export class AdminTimeUtil {
    */
   static formatToronto(
     utcDateLike: string | Date | null | undefined,
-    format = "MMMM d, yyyy h:mm a"
+    format = "MMMM d, yyyy h:mm a",
+    includeTimezone = false
   ): string {
     if (!utcDateLike) return "";
 
@@ -25,7 +26,12 @@ export class AdminTimeUtil {
         zone: "utc",
       }).setZone(this.TIMEZONE);
 
-      return dt.toFormat(format);
+      const formatted = dt.toFormat(format);
+      if (includeTimezone) {
+        const tzAbbr = dt.offsetNameShort ?? "EST";
+        return `${formatted} ${tzAbbr}`;
+      }
+      return formatted;
     } catch (error) {
       console.error("Error formatting Toronto time:", error);
       return String(utcDateLike);
@@ -103,7 +109,7 @@ export class AdminTimeUtil {
    * @returns Formatted date string
    */
   static formatTorontoDate(utcDateLike: string | Date | null): string {
-    return this.formatToronto(utcDateLike, "MMMM d, yyyy");
+    return this.formatToronto(utcDateLike, "MMMM d, yyyy", false);
   }
 
   /**

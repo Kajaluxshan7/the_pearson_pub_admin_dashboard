@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { AdminTimeUtil } from "../utils/timezone-luxon";
 import {
   Box,
   Typography,
@@ -138,7 +139,7 @@ export const CategoriesView: React.FC = () => {
       label: "Last Updated",
       minWidth: 130,
       format: (value: string | number | Date) =>
-        new Date(value).toLocaleDateString(),
+        AdminTimeUtil.formatTorontoDate(value),
     },
   ];
   const handleView = (category: Category) => {
@@ -611,9 +612,7 @@ export const CategoriesView: React.FC = () => {
                           Created Date
                         </Typography>
                         <Typography variant="body1">
-                          {new Date(
-                            selectedCategory.created_at
-                          ).toLocaleDateString()}
+                          {AdminTimeUtil.formatTorontoDate(selectedCategory.created_at)}
                         </Typography>
                       </Grid>
                       <Grid item xs={12}>
@@ -638,9 +637,7 @@ export const CategoriesView: React.FC = () => {
                           Last Updated
                         </Typography>
                         <Typography variant="body1">
-                          {new Date(
-                            selectedCategory.updated_at
-                          ).toLocaleDateString()}
+                          {AdminTimeUtil.formatTorontoDate(selectedCategory.updated_at)}
                         </Typography>
                       </Grid>
                     </Grid>

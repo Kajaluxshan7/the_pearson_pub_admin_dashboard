@@ -1,8 +1,7 @@
 import axios from "axios";
 
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL; // NestJS backend URL
-// const API_BASE_URL = "http://localhost:5000/"; // NestJS backend URL
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 // Create axios instance with common config
 const api = axios.create({
@@ -12,9 +11,6 @@ const api = axios.create({
     "Content-Type": "application/json",
   },
 });
-
-// Request interceptor to add auth token from localStorage if available
-// No need for Authorization header, rely on cookies
 
 // Response interceptor to handle errors
 api.interceptors.response.use(

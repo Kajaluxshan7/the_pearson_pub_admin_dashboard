@@ -400,6 +400,12 @@ export const SpecialsView: React.FC = () => {
         saveData = {
           ...baseData,
           specialsDayId: formData.specialsDayId,
+          display_start_time: formData.display_start_time
+            ? AdminTimeUtil.parseFromDateTimeInput(formData.display_start_time)
+            : undefined,
+          display_end_time: formData.display_end_time
+            ? AdminTimeUtil.parseFromDateTimeInput(formData.display_end_time)
+            : undefined,
         };
       } else if (formData.special_type === "seasonal") {
         saveData = {
@@ -419,7 +425,15 @@ export const SpecialsView: React.FC = () => {
             : undefined,
         };
       } else if (formData.special_type === "latenight") {
-        saveData = baseData;
+        saveData = {
+          ...baseData,
+          display_start_time: formData.display_start_time
+            ? AdminTimeUtil.parseFromDateTimeInput(formData.display_start_time)
+            : undefined,
+          display_end_time: formData.display_end_time
+            ? AdminTimeUtil.parseFromDateTimeInput(formData.display_end_time)
+            : undefined,
+        };
       } else {
         throw new Error("Invalid special type");
       }
@@ -610,11 +624,7 @@ export const SpecialsView: React.FC = () => {
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-    });
+    return AdminTimeUtil.formatTorontoDate(dateString);
   };
 
   const getDisplayImage = (special: Special): string | undefined => {
@@ -1023,13 +1033,9 @@ export const SpecialsView: React.FC = () => {
                                       variant="body2"
                                       color="text.secondary"
                                     >
-                                      {new Date(
-                                        special.seasonal_start_datetime
-                                      ).toLocaleDateString()}
+                                      {AdminTimeUtil.formatToronto(special.seasonal_start_datetime)}
                                       {special.seasonal_end_datetime &&
-                                        ` - ${new Date(
-                                          special.seasonal_end_datetime
-                                        ).toLocaleDateString()}`}
+                                        ` - ${AdminTimeUtil.formatToronto(special.seasonal_end_datetime)}`}
                                     </Typography>
                                   </Box>
                                 )}
@@ -1238,13 +1244,9 @@ export const SpecialsView: React.FC = () => {
                               sx={{ fontSize: 16, color: "text.secondary" }}
                             />
                             <Typography variant="body2" color="text.secondary">
-                              {new Date(
-                                special.seasonal_start_datetime
-                              ).toLocaleDateString()}
+                              {AdminTimeUtil.formatToronto(special.seasonal_start_datetime)}
                               {special.seasonal_end_datetime &&
-                                ` - ${new Date(
-                                  special.seasonal_end_datetime
-                                ).toLocaleDateString()}`}
+                                ` - ${AdminTimeUtil.formatToronto(special.seasonal_end_datetime)}`}
                             </Typography>
                           </Box>
                         )}
@@ -1441,7 +1443,7 @@ export const SpecialsView: React.FC = () => {
                 />
               </Grid>
 
-              {/* Only show Start/End dates for seasonal specials */}
+              {/* Only show Seasonal Start/End dates for seasonal specials */}
               {formData.special_type === "seasonal" && (
                 <>
                   <Grid item xs={12} md={6}>
@@ -1476,42 +1478,44 @@ export const SpecialsView: React.FC = () => {
                       sx={{ "& .MuiOutlinedInput-root": { borderRadius: 2 } }}
                     />
                   </Grid>
-                  <Grid item xs={12} md={6}>
-                    <TextField
-                      fullWidth
-                      label="Display Start Time (Optional)"
-                      type="datetime-local"
-                      value={formData.display_start_time}
-                      onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          display_start_time: e.target.value,
-                        })
-                      }
-                      InputLabelProps={{ shrink: true }}
-                      sx={{ "& .MuiOutlinedInput-root": { borderRadius: 2 } }}
-                      helperText="When this special becomes visible to users"
-                    />
-                  </Grid>
-                  <Grid item xs={12} md={6}>
-                    <TextField
-                      fullWidth
-                      label="Display End Time (Optional)"
-                      type="datetime-local"
-                      value={formData.display_end_time}
-                      onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          display_end_time: e.target.value,
-                        })
-                      }
-                      InputLabelProps={{ shrink: true }}
-                      sx={{ "& .MuiOutlinedInput-root": { borderRadius: 2 } }}
-                      helperText="When this special stops being visible to users"
-                    />
-                  </Grid>
                 </>
               )}
+
+              {/* Display time window - shown for all special types */}
+              <Grid item xs={12} md={6}>
+                <TextField
+                  fullWidth
+                  label="Display Start Time (Optional)"
+                  type="datetime-local"
+                  value={formData.display_start_time}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      display_start_time: e.target.value,
+                    })
+                  }
+                  InputLabelProps={{ shrink: true }}
+                  sx={{ "& .MuiOutlinedInput-root": { borderRadius: 2 } }}
+                  helperText="When this special becomes visible to users"
+                />
+              </Grid>
+              <Grid item xs={12} md={6}>
+                <TextField
+                  fullWidth
+                  label="Display End Time (Optional)"
+                  type="datetime-local"
+                  value={formData.display_end_time}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      display_end_time: e.target.value,
+                    })
+                  }
+                  InputLabelProps={{ shrink: true }}
+                  sx={{ "& .MuiOutlinedInput-root": { borderRadius: 2 } }}
+                  helperText="When this special stops being visible to users"
+                />
+              </Grid>
 
               {/* Image Upload Section */}
               <Grid item xs={12}>
@@ -2113,13 +2117,9 @@ export const SpecialsView: React.FC = () => {
                           Duration
                         </Typography>
                         <Typography variant="body1" color="text.secondary">
-                          {new Date(
-                            selectedSpecial.seasonal_start_datetime
-                          ).toLocaleString()}
+                          {AdminTimeUtil.formatToronto(selectedSpecial.seasonal_start_datetime)}
                           {selectedSpecial.seasonal_end_datetime &&
-                            ` - ${new Date(
-                              selectedSpecial.seasonal_end_datetime
-                            ).toLocaleString()}`}
+                            ` - ${AdminTimeUtil.formatToronto(selectedSpecial.seasonal_end_datetime)}`}
                         </Typography>
                       </Box>
                     )}

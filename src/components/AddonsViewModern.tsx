@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { AdminTimeUtil } from "../utils/timezone-luxon";
 import {
   Box,
   Typography,
@@ -365,7 +366,7 @@ export const AddonsViewModern: React.FC<AddonsViewModernProps> = () => {
       minWidth: 120,
       format: (value: any) => (
         <Typography variant="caption" color="text.secondary">
-          {new Date(value).toLocaleDateString()}
+          {AdminTimeUtil.formatTorontoDate(value)}
         </Typography>
       ),
     },
@@ -818,7 +819,7 @@ export const AddonsViewModern: React.FC<AddonsViewModernProps> = () => {
                     Created
                   </Typography>
                   <Typography variant="body1">
-                    {new Date(selectedAddon.created_at).toLocaleDateString()}
+                    {AdminTimeUtil.formatTorontoDate(selectedAddon.created_at)}
                   </Typography>
                 </Grid>
               </Grid>

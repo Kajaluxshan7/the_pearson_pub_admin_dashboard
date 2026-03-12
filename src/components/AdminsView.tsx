@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
+import { AdminTimeUtil } from "../utils/timezone-luxon";
 import {
   Box,
   Typography,
@@ -401,11 +402,7 @@ export const AdminsView: React.FC = () => {
       minWidth: 120,
       format: (value: any) => (
         <Typography variant="body2" color="text.secondary">
-          {new Date(value).toLocaleDateString("en-US", {
-            month: "short",
-            day: "numeric",
-            year: "numeric",
-          })}
+          {AdminTimeUtil.formatTorontoDate(value)}
         </Typography>
       ),
     },
@@ -415,11 +412,7 @@ export const AdminsView: React.FC = () => {
       minWidth: 130,
       format: (value: any) => (
         <Typography variant="body2" color="text.secondary">
-          {new Date(value).toLocaleDateString("en-US", {
-            month: "short",
-            day: "numeric",
-            year: "numeric",
-          })}
+          {AdminTimeUtil.formatTorontoDate(value)}
         </Typography>
       ),
     },
@@ -1184,13 +1177,7 @@ export const AdminsView: React.FC = () => {
                           Account Created
                         </Typography>
                         <Typography variant="body1" fontWeight={500}>
-                          {new Date(
-                            selectedAdmin.created_at
-                          ).toLocaleDateString("en-US", {
-                            year: "numeric",
-                            month: "long",
-                            day: "numeric",
-                          })}
+                          {AdminTimeUtil.formatTorontoDate(selectedAdmin.created_at)}
                         </Typography>
                       </Box>
 
@@ -1204,13 +1191,7 @@ export const AdminsView: React.FC = () => {
                           Last Updated
                         </Typography>
                         <Typography variant="body1" fontWeight={500}>
-                          {new Date(
-                            selectedAdmin.updated_at
-                          ).toLocaleDateString("en-US", {
-                            year: "numeric",
-                            month: "long",
-                            day: "numeric",
-                          })}
+                          {AdminTimeUtil.formatTorontoDate(selectedAdmin.updated_at)}
                         </Typography>
                       </Box>
                     </Paper>

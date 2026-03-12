@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { AdminTimeUtil } from "../utils/timezone-luxon";
 import {
   Box,
   Typography,
@@ -483,7 +484,7 @@ const StoriesViewModern: React.FC = () => {
       minWidth: 120,
       format: (value: string) => (
         <Typography variant="body2" color="text.secondary">
-          {new Date(value).toLocaleDateString()}
+          {AdminTimeUtil.formatTorontoDate(value)}
         </Typography>
       ),
     },
@@ -1084,7 +1085,7 @@ const StoriesViewModern: React.FC = () => {
                         sx={{ mb: 0.5 }}
                       >
                         Created:{" "}
-                        {new Date(selectedStory.created_at).toLocaleString()}
+                        {AdminTimeUtil.formatToronto(selectedStory.created_at)}
                       </Typography>
                       <Typography
                         variant="body2"
@@ -1092,7 +1093,7 @@ const StoriesViewModern: React.FC = () => {
                         sx={{ mb: 0.5 }}
                       >
                         Last Updated:{" "}
-                        {new Date(selectedStory.updated_at).toLocaleString()}
+                        {AdminTimeUtil.formatToronto(selectedStory.updated_at)}
                       </Typography>
                       {selectedStory.lastEditedByAdmin && (
                         <Typography variant="body2" color="text.secondary">

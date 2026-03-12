@@ -874,16 +874,7 @@ const OperationHoursViewModern: React.FC<OperationHoursViewModernProps> = ({
                       Created
                     </Typography>
                     <Typography variant="body1" fontWeight={500}>
-                      {new Date(
-                        selectedOperationHour.created_at
-                      ).toLocaleDateString("en-CA", {
-                        year: "numeric",
-                        month: "long",
-                        day: "numeric",
-                        hour: "2-digit",
-                        minute: "2-digit",
-                        timeZone: "America/Toronto",
-                      })}
+                      {AdminTimeUtil.formatToronto(selectedOperationHour.created_at)}
                     </Typography>
                   </Box>
 
@@ -897,16 +888,7 @@ const OperationHoursViewModern: React.FC<OperationHoursViewModernProps> = ({
                       Last Updated
                     </Typography>
                     <Typography variant="body1" fontWeight={500}>
-                      {new Date(
-                        selectedOperationHour.updated_at
-                      ).toLocaleDateString("en-CA", {
-                        year: "numeric",
-                        month: "long",
-                        day: "numeric",
-                        hour: "2-digit",
-                        minute: "2-digit",
-                        timeZone: "America/Toronto",
-                      })}
+                      {AdminTimeUtil.formatToronto(selectedOperationHour.updated_at)}
                     </Typography>
                   </Box>
 

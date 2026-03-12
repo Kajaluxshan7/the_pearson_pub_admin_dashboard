@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { AdminTimeUtil } from "../utils/timezone-luxon";
 import {
   Card,
   CardContent,
@@ -655,12 +656,7 @@ export const DashboardView: React.FC = () => {
             color="text.secondary"
             sx={{ fontWeight: 400 }}
           >
-            {new Date().toLocaleDateString("en-US", {
-              weekday: "long",
-              year: "numeric",
-              month: "long",
-              day: "numeric",
-            })}
+            {AdminTimeUtil.nowToronto().toFormat("EEEE, MMMM d, yyyy")}
           </Typography>
         </Box>
       </motion.div>
@@ -947,9 +943,7 @@ export const DashboardView: React.FC = () => {
                       </ListItemIcon>
                       <ListItemText
                         primary={event.name}
-                        secondary={new Date(
-                          event.start_date
-                        ).toLocaleDateString()}
+                        secondary={AdminTimeUtil.formatTorontoDate(event.start_date)}
                       />
                     </ListItem>
                   ))
@@ -1083,7 +1077,7 @@ export const DashboardView: React.FC = () => {
                         Start Date
                       </Typography>
                       <Chip
-                        label={new Date(event.start_date).toLocaleDateString()}
+                        label={AdminTimeUtil.formatTorontoDate(event.start_date)}
                         color="info"
                         variant="outlined"
                         size="small"
@@ -1098,7 +1092,7 @@ export const DashboardView: React.FC = () => {
                         End Date
                       </Typography>
                       <Chip
-                        label={new Date(event.end_date).toLocaleDateString()}
+                        label={AdminTimeUtil.formatTorontoDate(event.end_date)}
                         color="warning"
                         variant="outlined"
                         size="small"

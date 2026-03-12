@@ -387,13 +387,9 @@ const EventsViewModern: React.FC<EventsViewModernProps> = ({ userRole }) => {
   const handleReschedule = (event: Event) => {
     console.log("📅 Opening reschedule modal for event:", event);
     setSelectedEvent(event);
-    // Format datetime for datetime-local input (YYYY-MM-DDTHH:MM)
-    const startDateTime = event.start_date.includes("T")
-      ? event.start_date.substring(0, 16)
-      : event.start_date + "T00:00";
-    const endDateTime = event.end_date.includes("T")
-      ? event.end_date.substring(0, 16)
-      : event.end_date + "T00:00";
+    // Format datetime for datetime-local input using Toronto timezone
+    const startDateTime = AdminTimeUtil.formatForDateTimeInput(event.start_date);
+    const endDateTime = AdminTimeUtil.formatForDateTimeInput(event.end_date);
 
     setRescheduleData({
       start_date: startDateTime,
@@ -407,8 +403,8 @@ const EventsViewModern: React.FC<EventsViewModernProps> = ({ userRole }) => {
 
     try {
       await eventService.update(selectedEvent.id, {
-        start_date: rescheduleData.start_date,
-        end_date: rescheduleData.end_date,
+        start_date: AdminTimeUtil.parseFromDateTimeInput(rescheduleData.start_date),
+        end_date: AdminTimeUtil.parseFromDateTimeInput(rescheduleData.end_date),
       });
       showSuccess(`Event "${selectedEvent.name}" has been rescheduled`);
       setIsRescheduleModalOpen(false);
@@ -483,7 +479,7 @@ const EventsViewModern: React.FC<EventsViewModernProps> = ({ userRole }) => {
         <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
           <CalendarToday sx={{ fontSize: 16, color: "success.main" }} />
           <Typography variant="body2">
-            {new Date(value).toLocaleDateString()}
+            {AdminTimeUtil.formatToronto(value)}
           </Typography>
         </Box>
       ),
@@ -496,7 +492,7 @@ const EventsViewModern: React.FC<EventsViewModernProps> = ({ userRole }) => {
         <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
           <CalendarToday sx={{ fontSize: 16, color: "error.main" }} />
           <Typography variant="body2">
-            {new Date(value).toLocaleDateString()}
+            {AdminTimeUtil.formatToronto(value)}
           </Typography>
         </Box>
       ),
@@ -534,20 +530,16 @@ const EventsViewModern: React.FC<EventsViewModernProps> = ({ userRole }) => {
       id: "created_at",
       label: "Created",
       minWidth: 150,
-      format: (value: string | number | Date) => new Date(value).toLocaleDateString(),
+      format: (value: string | number | Date) => AdminTimeUtil.formatTorontoDate(value as string),
     },
   ];
 
   const handleStartEvent = async (event: Event) => {
     try {
-      // Update event start date to now if it's in the future
-      const now = new Date();
-      const updatedEvent = {
-        ...event,
-        start_date: now.toISOString(),
-      };
-
-      await eventService.update(event.id, updatedEvent);
+      // Update event start date to now
+      await eventService.update(event.id, {
+        start_date: new Date().toISOString(),
+      });
       showSuccess(`Event "${event.name}" has been started`);
       fetchEvents();
     } catch (error) {
@@ -559,13 +551,9 @@ const EventsViewModern: React.FC<EventsViewModernProps> = ({ userRole }) => {
   const handleEndEvent = async (event: Event) => {
     try {
       // Update event end date to now
-      const now = new Date();
-      const updatedEvent = {
-        ...event,
-        end_date: now.toISOString(),
-      };
-
-      await eventService.update(event.id, updatedEvent);
+      await eventService.update(event.id, {
+        end_date: new Date().toISOString(),
+      });
       showSuccess(`Event "${event.name}" has been ended`);
       fetchEvents();
     } catch (error) {
@@ -1052,11 +1040,7 @@ const EventsViewModern: React.FC<EventsViewModernProps> = ({ userRole }) => {
                     </Typography>
                     <Box display="flex" gap={1} mt={0.5}>
                       <Chip
-                        label={`${new Date(
-                          selectedEvent.start_date
-                        ).toLocaleDateString()} - ${new Date(
-                          selectedEvent.end_date
-                        ).toLocaleDateString()}`}
+                        label={`${AdminTimeUtil.formatTorontoDate(selectedEvent.start_date)} - ${AdminTimeUtil.formatTorontoDate(selectedEvent.end_date)}`}
                         color="primary"
                         size="small"
                         sx={{
@@ -1233,15 +1217,7 @@ const EventsViewModern: React.FC<EventsViewModernProps> = ({ userRole }) => {
                           Created
                         </Typography>
                         <Typography variant="body1" fontWeight={500}>
-                          {new Date(
-                            selectedEvent.created_at
-                          ).toLocaleDateString("en-US", {
-                            year: "numeric",
-                            month: "long",
-                            day: "numeric",
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          })}
+                          {AdminTimeUtil.formatToronto(selectedEvent.created_at)}
                         </Typography>
                       </Box>
 
@@ -1255,15 +1231,7 @@ const EventsViewModern: React.FC<EventsViewModernProps> = ({ userRole }) => {
                           Last Updated
                         </Typography>
                         <Typography variant="body1" fontWeight={500}>
-                          {new Date(
-                            selectedEvent.updated_at
-                          ).toLocaleDateString("en-US", {
-                            year: "numeric",
-                            month: "long",
-                            day: "numeric",
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          })}
+                          {AdminTimeUtil.formatToronto(selectedEvent.updated_at)}
                         </Typography>
                       </Box>
 
