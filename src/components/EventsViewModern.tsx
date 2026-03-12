@@ -1121,14 +1121,7 @@ const EventsViewModern: React.FC<EventsViewModernProps> = ({ userRole }) => {
                           {AdminTimeUtil.formatToronto(
                             selectedEvent.start_date,
                             "MMMM d, yyyy h:mm a"
-                          )}{" "}
-                          (
-                          {
-                            AdminTimeUtil.getTimezoneInfo(
-                              selectedEvent.start_date
-                            ).abbreviation
-                          }
-                          )
+                          )}
                         </Typography>
                       </Box>
 
@@ -1149,14 +1142,7 @@ const EventsViewModern: React.FC<EventsViewModernProps> = ({ userRole }) => {
                           {AdminTimeUtil.formatToronto(
                             selectedEvent.end_date,
                             "MMMM d, yyyy h:mm a"
-                          )}{" "}
-                          (
-                          {
-                            AdminTimeUtil.getTimezoneInfo(
-                              selectedEvent.end_date
-                            ).abbreviation
-                          }
-                          )
+                          )}
                         </Typography>
                       </Box>
                     </Paper>
