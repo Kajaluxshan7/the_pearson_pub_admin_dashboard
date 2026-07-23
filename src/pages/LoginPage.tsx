@@ -25,10 +25,9 @@ import {
   DarkMode,
 } from "@mui/icons-material";
 import { motion } from "framer-motion";
-import { authService } from "../services/api";
+import { API_BASE_URL, authService } from "../services/api";
 import Logo from "../assets/logo.png";
 
-const VITE_API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 interface LoginPageProps {
   onLogin: (token: string, user: any) => void;
   isDarkMode: boolean;
@@ -150,7 +149,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({
     setError("");
 
     try {
-      window.location.href = `${VITE_API_BASE_URL}/auth/google`;
+      window.location.href = `${API_BASE_URL}/auth/google`;
     } catch (error: any) {
       console.error("Google login error:", error);
       setError("Google login failed. Please try again.");

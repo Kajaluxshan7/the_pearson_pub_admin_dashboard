@@ -12,8 +12,8 @@ import { LoginPage } from "./pages/LoginPage";
 import SetupPassword from "./pages/SetupPassword";
 import { NotificationProvider } from "./contexts/NotificationContext";
 import { ErrorBoundary } from "./components/ErrorBoundary";
+import { API_BASE_URL } from "./services/api";
 
-const VITE_API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 const lightTheme = createTheme({
   palette: {
     mode: "light",
@@ -110,8 +110,7 @@ const AppContent: React.FC<{
 
   const checkAuthStatus = async () => {
     try {
-      const response = await fetch(`${VITE_API_BASE_URL}/auth/profile`, {
-        // const response = await fetch("http://localhost:5000/auth/profile", {
+      const response = await fetch(`${API_BASE_URL}/auth/profile`, {
         method: "GET",
         credentials: "include", // Include cookies
       });
@@ -134,8 +133,7 @@ const AppContent: React.FC<{
 
   const handleLogout = async () => {
     try {
-      // await fetch("http://localhost:5000/auth/logout", {
-      await fetch(`${VITE_API_BASE_URL}/auth/logout`, {
+      await fetch(`${API_BASE_URL}/auth/logout`, {
         method: "POST",
         credentials: "include", // Include cookies
       });

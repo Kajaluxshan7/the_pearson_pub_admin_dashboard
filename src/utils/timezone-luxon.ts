@@ -8,6 +8,54 @@ import { DateTime } from "luxon";
 export class AdminTimeUtil {
   private static readonly TIMEZONE = "America/Toronto";
 
+  private static readonly DAY_NAMES = [
+    "sunday",
+    "monday",
+    "tuesday",
+    "wednesday",
+    "thursday",
+    "friday",
+    "saturday",
+  ] as const;
+
+  /**
+   * Parse any date-like value into a Luxon DateTime in Toronto time.
+   *
+   * Parsing rules:
+   * - A `Date` keeps its instant and is re-zoned to Toronto.
+   * - A string carrying an offset (`...Z`, `+05:30`) has a well-defined
+   *   instant, which is converted to Toronto.
+   * - A string WITHOUT an offset (`2025-08-15`, `2025-08-15T19:30`) is
+   *   interpreted as Toronto wall-clock time, never as browser-local time.
+   *
+   * That last rule is what keeps rendering independent of the admin's
+   * machine timezone.
+   *
+   * @param value - Date-like value from the API or a form input
+   * @returns A DateTime in Toronto zone, or null if unparseable
+   */
+  private static toToronto(
+    value: string | Date | null | undefined
+  ): DateTime | null {
+    if (!value) return null;
+
+    const dt =
+      value instanceof Date
+        ? DateTime.fromJSDate(value).setZone(this.TIMEZONE)
+        : DateTime.fromISO(value.trim(), { zone: this.TIMEZONE });
+
+    return dt.isValid ? dt : null;
+  }
+
+  /**
+   * Convert time in HH:MM (or HH:MM:SS) form to minutes since midnight
+   */
+  private static timeToMinutes(timeString: string): number | null {
+    const [hours, minutes] = timeString.split(":").map(Number);
+    if (!Number.isFinite(hours) || !Number.isFinite(minutes)) return null;
+    return hours * 60 + minutes;
+  }
+
   /**
    * Convert UTC date from API to Toronto timezone for display
    * @param utcDateLike - UTC date string or Date object from API
@@ -22,9 +70,8 @@ export class AdminTimeUtil {
     if (!utcDateLike) return "";
 
     try {
-      const dt = DateTime.fromJSDate(new Date(utcDateLike), {
-        zone: "utc",
-      }).setZone(this.TIMEZONE);
+      const dt = this.toToronto(utcDateLike);
+      if (!dt) return String(utcDateLike);
 
       const formatted = dt.toFormat(format);
       if (includeTimezone) {
@@ -50,13 +97,16 @@ export class AdminTimeUtil {
     }
 
     try {
-      const dt = DateTime.fromJSDate(new Date(torontoLocal), {
-        zone: this.TIMEZONE,
-      });
+      // NOTE: DateTime.fromJSDate(d, { zone }) must NOT be used here - its
+      // `zone` option only changes rendering, it does not reinterpret the
+      // wall-clock time, so it would silently pass the input through
+      // unchanged after `new Date()` had already parsed it as browser-local.
+      const dt = this.toToronto(torontoLocal);
+      if (!dt) throw new Error(`Invalid date format: ${String(torontoLocal)}`);
       return dt.toUTC().toISO() ?? "";
     } catch (error) {
       console.error("Error parsing Toronto input:", error);
-      throw new Error(`Invalid date format: ${torontoLocal}`);
+      throw new Error(`Invalid date format: ${String(torontoLocal)}`);
     }
   }
 
@@ -69,11 +119,8 @@ export class AdminTimeUtil {
     if (!utcDateLike) return "";
 
     try {
-      const dt = DateTime.fromJSDate(new Date(utcDateLike), {
-        zone: "utc",
-      }).setZone(this.TIMEZONE);
-
-      return dt.toFormat("yyyy-MM-dd'T'HH:mm");
+      const dt = this.toToronto(utcDateLike);
+      return dt ? dt.toFormat("yyyy-MM-dd'T'HH:mm") : "";
     } catch (error) {
       console.error("Error formatting for datetime input:", error);
       return "";
@@ -145,7 +192,7 @@ export class AdminTimeUtil {
   static isDaylightSavingTime(date?: Date | string): boolean {
     try {
       const dt = date
-        ? DateTime.fromJSDate(new Date(date)).setZone(this.TIMEZONE)
+        ? (this.toToronto(date) ?? this.nowToronto())
         : this.nowToronto();
 
       return dt.offsetNameShort === "EDT";
@@ -168,7 +215,7 @@ export class AdminTimeUtil {
   } {
     try {
       const dt = date
-        ? DateTime.fromJSDate(new Date(date)).setZone(this.TIMEZONE)
+        ? (this.toToronto(date) ?? this.nowToronto())
         : this.nowToronto();
 
       return {
@@ -222,26 +269,53 @@ export class AdminTimeUtil {
    * @param closeTime - Closing time in HH:MM format
    * @returns true if currently within business hours
    */
-  static isWithinBusinessHours(openTime: string, closeTime: string): boolean {
+  static isWithinBusinessHours(
+    openTime: string,
+    closeTime: string,
+    day?: string
+  ): boolean {
     try {
       if (!openTime || !closeTime) return false;
 
       const now = this.nowToronto();
-      const today = now.toFormat("yyyy-MM-dd");
+      const currentMinutes = now.hour * 60 + now.minute;
+      const openMinutes = this.timeToMinutes(openTime);
+      const closeMinutes = this.timeToMinutes(closeTime);
 
-      const openDt = DateTime.fromISO(`${today}T${openTime}`, {
-        zone: this.TIMEZONE,
-      });
-      let closeDt = DateTime.fromISO(`${today}T${closeTime}`, {
-        zone: this.TIMEZONE,
-      });
+      if (openMinutes === null || closeMinutes === null) return false;
 
-      // Handle overnight hours (e.g., 22:00 to 02:00 next day)
-      if (closeDt <= openDt) {
-        closeDt = closeDt.plus({ days: 1 });
+      // Luxon weekday is 1 (Monday) .. 7 (Sunday); `% 7` maps Sunday to index 0
+      const todayName = this.DAY_NAMES[now.weekday % 7];
+      const isOvernight = closeMinutes < openMinutes;
+
+      // No specific day given: evaluate the hours against today only.
+      if (!day) {
+        return isOvernight
+          ? currentMinutes >= openMinutes || currentMinutes < closeMinutes
+          : currentMinutes >= openMinutes && currentMinutes < closeMinutes;
       }
 
-      return now >= openDt && now <= closeDt;
+      const targetDay = day.toLowerCase();
+
+      if (isOvernight) {
+        // An overnight block belongs to `targetDay` but spills into the day
+        // after it, so it can be live during either of those two calendar days.
+        if (todayName === targetDay && currentMinutes >= openMinutes) {
+          return true;
+        }
+
+        const targetIndex = this.DAY_NAMES.indexOf(
+          targetDay as (typeof this.DAY_NAMES)[number]
+        );
+        if (targetIndex === -1) return false;
+
+        const nextDay = this.DAY_NAMES[(targetIndex + 1) % 7];
+        return todayName === nextDay && currentMinutes < closeMinutes;
+      }
+
+      if (todayName !== targetDay) return false;
+
+      return currentMinutes >= openMinutes && currentMinutes < closeMinutes;
     } catch (error) {
       console.error("Error checking business hours:", error);
       return false;
@@ -256,8 +330,7 @@ export class AdminTimeUtil {
   static isValidDateTime(dateString: string): boolean {
     if (!dateString) return false;
     try {
-      const dt = DateTime.fromJSDate(new Date(dateString));
-      return dt.isValid;
+      return this.toToronto(dateString) !== null;
     } catch {
       return false;
     }
